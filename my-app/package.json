@@ -1,9 +1,0 @@
-{
-  "name": "my-app",
-  "version": "1.0.0",
-  "private": true,
-  "scripts": {
-    "start": "node start-all.js",
-    "start:test": "node start-all.js"
-  }
-}
