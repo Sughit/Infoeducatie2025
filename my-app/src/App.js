@@ -7,6 +7,7 @@ import Sandbox from './components/Sandbox'
 import Feedback from './components/Feedback'
 import Login from './components/Login'
 import Signup from './components/Signup'
+import Profile from './components/Profile'
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
             <Route path="/feedback" element={<Feedback />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
+            <Route path="/profile" element={<Profile />} />
           </Routes>
         </main>
       </div>
