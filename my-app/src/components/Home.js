@@ -1,6 +1,14 @@
-/* Home.js */
+// src/components/Home.js
 import React from 'react';
 import { Link } from 'react-router-dom';
+import {
+  LessonsIllustration,
+  SimulationsIllustration,
+  TestsIllustration,
+  SandboxIllustration,
+  FeedbackIllustration
+} from './Illustrations';
+import { Book, PlayCircle, ClipboardCheck, Code, MessageCircle } from 'lucide-react';
 
 export default function Home() {
   const containerRef = React.useRef(null);
@@ -10,12 +18,75 @@ export default function Home() {
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const sections = [
+    {
+      id: 'lectii',
+      title: 'Lecții',
+      icon: <Book className="w-8 h-8 text-highlight mr-2" />,
+      items: [
+        'Introducere în grafuri și arbori',
+        'Parcurgerile DFS & BFS',
+        'Algoritmi de elementari',
+      ],
+      button: 'Accesează lecțiile',
+      Illustration: LessonsIllustration
+    },
+    {
+      id: 'simulari',
+      title: 'Simulări',
+      icon: <PlayCircle className="w-8 h-8 text-highlight mr-2" />,
+      items: [
+        'Vizualizare pas cu pas a algoritmilor',
+        'Slider interactiv pentru viteza simulării',
+        'Node-uri și muchii editabile'
+      ],
+      button: 'Începe simulările',
+      Illustration: SimulationsIllustration
+    },
+    {
+      id: 'teste',
+      title: 'Teste',
+      icon: <ClipboardCheck className="w-8 h-8 text-highlight mr-2" />,
+      items: [
+        'Întrebări de dificultate variată',
+        'Feedback imediat după răspuns',
+        'Progres măsurat în timp real'
+      ],
+      button: 'Începe testele',
+      Illustration: TestsIllustration
+    },
+    {
+      id: 'sandbox',
+      title: 'Sandbox',
+      icon: <Code className="w-8 h-8 text-highlight mr-2" />,
+      items: [
+        'Crează grafuri și arbori personalizați',
+        'Modifică noduri și muchii',
+        'Vizualizarea grafurilor speciale'
+      ],
+      button: 'Accesează sandbox',
+      Illustration: SandboxIllustration
+    },
+    {
+      id: 'feedback',
+      title: 'Feedback',
+      icon: <MessageCircle className="w-8 h-8 text-highlight mr-2" />,
+      items: [
+        'Trimite sugestii de îmbunătățire',
+        'Raportează bug-uri rapid',
+        'Cere noi funcționalități'
+      ],
+      button: 'Trimite feedback',
+      Illustration: FeedbackIllustration
+    }
+  ];
+
   return (
     <div
       ref={containerRef}
       className="overflow-y-auto snap-y snap-mandatory h-[calc(100vh-4rem)] scroll-smooth"
     >
-      {/* Hero */}
+      {/* Hero (neschimbată) */}
       <section className="snap-start h-full relative bg-gradient-to-r from-blue to-light-blue flex items-center justify-center text-center overflow-hidden">
         <div className="relative z-10 max-w-2xl px-6">
           <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-4">
@@ -35,90 +106,36 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Lecții */}
-      <section
-        id="lectii"
-        className="snap-start h-full flex flex-col items-center justify-center text-center px-6"
-      >
-        <h2 className="text-3xl font-semibold mb-4">Lecții</h2>
-        <p className="mb-6 max-w-xl">
-          Explorați lecțiile noastre interactive despre structurile de date și grafuri.
-        </p>
-        <Link
-        //   to="/lectii"
-          className="inline-block bg-blue text-white px-6 py-2 rounded-lg hover:bg-light-blue transition"
+      {/* Restul secțiunilor */}
+      {sections.map(({ id, title, icon, items, button, Illustration }) => (
+        <section
+          key={id}
+          id={id}
+          className="snap-start h-full relative flex items-center justify-center text-center px-6 md:px-24 lg:px-48"
         >
-          Accesează lecțiile
-        </Link>
-      </section>
-
-      {/* Simulări */}
-      <section
-        id="simulari"
-        className="snap-start h-full flex flex-col items-center justify-center text-center px-6"
-      >
-        <h2 className="text-3xl font-semibold mb-4">Simulări</h2>
-        <p className="mb-6 max-w-xl">
-          Practicați cu simulări care explică pas cu pas algoritmi pe arbori și grafuri.
-        </p>
-        <Link
-        //   to="/simulari"
-          className="inline-block bg-blue text-white px-6 py-2 rounded-lg hover:bg-light-blue transition"
-        >
-          Începe simulările
-        </Link>
-      </section>
-
-      {/* Teste */}
-      <section
-        id="teste"
-        className="snap-start h-full flex flex-col items-center justify-center text-center px-6"
-      >
-        <h2 className="text-3xl font-semibold mb-4">Teste</h2>
-        <p className="mb-6 max-w-xl">
-          Verifică-ți cunoștințele cu teste pe grafuri, arbori și algoritmi.
-        </p>
-        <Link
-        //   to="/teste"
-          className="inline-block bg-blue text-white px-6 py-2 rounded-lg hover:bg-light-blue transition"
-        >
-          Începe testele
-        </Link>
-      </section>
-
-      {/* Sandbox */}
-      <section
-        id="sandbox"
-        className="snap-start h-full flex flex-col items-center justify-center text-center px-6"
-      >
-        <h2 className="text-3xl font-semibold mb-4">Sandbox</h2>
-        <p className="mb-6 max-w-xl">
-          Testează-ți propriile coduri și experimente cu exemple în timp real.
-        </p>
-        <Link
-          to="/sandbox"
-          className="inline-block bg-blue text-white px-6 py-2 rounded-lg hover:bg-light-blue transition"
-        >
-          Accesează sandbox
-        </Link>
-      </section>
-
-      {/* Feedback */}
-      <section
-        id="feedback"
-        className="snap-start h-full flex flex-col items-center justify-center text-center px-6"
-      >
-        <h2 className="text-3xl font-semibold mb-4">Feedback</h2>
-        <p className="mb-6 max-w-xl">
-          Spune-ne părerea ta și ajută-ne să îmbunătățim platforma.
-        </p>
-        <Link
-          to="/feedback"
-          className="inline-block bg-blue text-white px-6 py-2 rounded-lg hover:bg-light-blue transition"
-        >
-          Trimite feedback
-        </Link>
-      </section>
+          <div className="absolute inset-0 flex items-center justify-center opacity-20 pointer-events-none">
+            <Illustration />
+          </div>
+          <div className="relative z-10 w-full max-w-3xl space-y-8 px-6 md:px-8 py-12">
+            <h2 className="text-4xl md:text-6xl font-semibold flex items-center justify-center text-dark-blue">
+              {icon}{title}
+            </h2>
+            <ul className="list-disc list-inside space-y-3 marker:text-highlight text-left md:text-center">
+              {items.map((text) => (
+                <li key={text} className="text-lg md:text-xl text-dark-blue">
+                  {text}
+                </li>
+              ))}
+            </ul>
+            <Link
+              to={id === 'feedback' ? '/feedback' : `#${id}`}
+              className="inline-block bg-highlight text-white font-medium py-3 px-8 rounded-full shadow hover:scale-105 transition-transform"
+            >
+              {button}
+            </Link>
+          </div>
+        </section>
+      ))}
     </div>
   );
 }
