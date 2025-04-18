@@ -101,7 +101,7 @@ export default function Profile() {
         {message && <p className="mt-4 text-center text-red-500">{message}</p>}
         <button
           onClick={handleLogout}
-          className="mt-6 w-full border-2 border-carmine text-carmine py-2 rounded hover:bg-carmine hover:text-white"
+          className="mt-6 w-full border-2 border-highlight text-highlight py-2 rounded hover:bg-highlight hover:text-white"
         >
           Deconectare
         </button>

@@ -54,7 +54,7 @@ export default function Navbar() {
     <nav className="fixed top-0 w-full z-50 bg-white shadow-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
-          <Link to="/" className="text-2xl font-extrabold text-carmine hover:text-dark-blue">Graf.in</Link>
+          <Link to="/" className="text-2xl font-extrabold text-highlight hover:text-dark-blue">Graf.in</Link>
 
           <div className="hidden md:flex md:items-center md:space-x-6">
             <NavLink to="/sandbox"  className={navClass}>Sandbox</NavLink>
@@ -92,7 +92,7 @@ export default function Navbar() {
               </Link>
             ) : (
               <>
-                <Link to="/login"  className="px-4 py-2 border-2 border-carmine text-carmine rounded-lg hover:bg-carmine hover:text-white">Conectare</Link>
+                <Link to="/login"  className="px-4 py-2 border-2 border-highlight text-highlight rounded-lg hover:bg-highlight hover:text-white">Conectare</Link>
                 <Link to="/signup" className="px-4 py-2 bg-blue text-white rounded-lg hover:bg-light-blue">Înregistrare</Link>
               </>
             )}
@@ -136,7 +136,7 @@ export default function Navbar() {
             </>
           ) : (
             <>
-              <Link to="/login" className="block px-4 py-2 border-2 border-carmine text-carmine rounded-lg hover:bg-carmine hover:text-white">Conectare</Link>
+              <Link to="/login" className="block px-4 py-2 border-2 border-highlight text-highlight rounded-lg hover:bg-highlight hover:text-white">Conectare</Link>
               <Link to="/signup" className="block px-4 py-2 bg-blue text-white rounded-lg hover:bg-light-blue">Înregistrare</Link>
             </>
           )}

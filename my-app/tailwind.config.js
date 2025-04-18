@@ -6,10 +6,10 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        carmine: '#931621',
-        'dark-blue': '#28464B',
-        'light-blue': '#326771',
-        blue: '#2C8C99',
+        'highlight': '#4EA5D9',
+        'dark-blue': '#122C34',
+        'light-blue': '#224870',
+        blue: '#2A4494',
       },
     },
   },
