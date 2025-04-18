@@ -65,8 +65,9 @@ export default function Navbar() {
               </button>
               {lessonsOpen && (
                 <div className="absolute left-0 mt-2 w-44 bg-white shadow-lg rounded-lg py-2 z-10">
-                  <Link to="/lectii/1" className={`${base} block text-dark-blue hover:text-blue hover:bg-light-blue/10`}>Lecția 1</Link>
-                  <Link to="/lectii/2" className={`${base} block text-dark-blue hover:text-blue hover:bg-light-blue/10`}>Lecția 2</Link>
+                  <Link to="/neorientate" className={`${base} block text-dark-blue hover:text-blue hover:bg-light-blue/10`}>Grafuri Neorientate</Link>
+                  <Link to="/orientate" className={`${base} block text-dark-blue hover:text-blue hover:bg-light-blue/10`}>Grafuri Orientate</Link>
+                  <Link to="/arbori" className={`${base} block text-dark-blue hover:text-blue hover:bg-light-blue/10`}>Arbori</Link>
                 </div>
               )}
             </div>
@@ -76,8 +77,9 @@ export default function Navbar() {
               </button>
               {testsOpen && (
                 <div className="absolute left-0 mt-2 w-44 bg-white shadow-lg rounded-lg py-2 z-10">
-                  <Link to="/teste/1" className={`${base} block text-dark-blue hover:text-blue hover:bg-light-blue/10`}>Test 1</Link>
-                  <Link to="/teste/2" className={`${base} block text-dark-blue hover:text-blue hover:bg-light-blue/10`}>Test 2</Link>
+                  <Link to="/testNeorientate" className={`${base} block text-dark-blue hover:text-blue hover:bg-light-blue/10`}>Grafuri Neorientate</Link>
+                  <Link to="/testOrientate" className={`${base} block text-dark-blue hover:text-blue hover:bg-light-blue/10`}>Grafuri Orientate</Link>
+                  <Link to="/testArbori" className={`${base} block text-dark-blue hover:text-blue hover:bg-light-blue/10`}>Arbori</Link>
                 </div>
               )}
             </div>

@@ -9,12 +9,19 @@ import Login from './components/Login'
 import Signup from './components/Signup'
 import Profile from './components/Profile'
 
+import Neorientate from './lessons/Neorientate'
+import Orientate from './lessons/Orientate'
+import Arbori from './lessons/Arbori'
+
+import TestNeorientate from './tests/TestNeorientate'
+import TestOrientate from './tests/TestOrientate'
+import TestArbori from './tests/TestArbori'
+
 export default function App() {
   return (
     <Router>
       <div className="flex flex-col min-h-screen">
         <Navbar />
-        {/* Padding-top egal cu înălțimea navbar-ului */}
         <main className="flex-grow pt-16">
           <Routes>
             <Route path="/" element={<Home />} />
@@ -23,6 +30,14 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/profile" element={<Profile />} />
+
+            <Route path="/neorientate" element={<Neorientate />} />
+            <Route path="/orientate" element={<Orientate />} />
+            <Route path="/arbori" element={<Arbori />} />
+
+            <Route path="/testNeorientate" element={<TestNeorientate />} />
+            <Route path="/testOrientate" element={<TestOrientate />} />
+            <Route path="/testArbori" element={<TestArbori />} />
           </Routes>
         </main>
       </div>
