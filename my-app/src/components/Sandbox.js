@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import * as d3 from 'd3';
 
 export default function Sandbox() {
@@ -26,10 +26,10 @@ export default function Sandbox() {
 
   function generateDirected() {
     const num = Math.min(Math.floor(Math.random() * 10) + 5, 10);
-    const ns = Array.from({ length: num }, (_, i) => ({ id: i }));
+    const ns = Array.from({ length: num }, (_, i) => ({ id: i + 1 }));
     const ls = [];
-    for (let i = 0; i < num; i++) {
-      const t = Math.floor(Math.random() * num);
+    for (let i = 1; i <= num; i++) {
+      const t = Math.floor(Math.random() * num) + 1;
       if (i !== t) ls.push({ source: i, target: t });
     }
     updateGraph(ns, ls, false, true);
@@ -37,10 +37,10 @@ export default function Sandbox() {
 
   function generateUndirected() {
     const num = Math.min(Math.floor(Math.random() * 10) + 5, 10);
-    const ns = Array.from({ length: num }, (_, i) => ({ id: i }));
+    const ns = Array.from({ length: num }, (_, i) => ({ id: i + 1 }));
     const ls = [];
-    for (let i = 0; i < num; i++) {
-      for (let j = i + 1; j < num; j++) {
+    for (let i = 1; i <= num; i++) {
+      for (let j = i + 1; j <= num; j++) {
         if (Math.random() < 0.3) {
           ls.push({ source: i, target: j });
           ls.push({ source: j, target: i });
@@ -52,10 +52,10 @@ export default function Sandbox() {
 
   function generateFreeTree() {
     const num = Math.min(Math.floor(Math.random() * 10) + 5, 10);
-    const ns = Array.from({ length: num }, (_, i) => ({ id: i }));
+    const ns = Array.from({ length: num }, (_, i) => ({ id: i + 1 }));
     const ls = [];
-    for (let i = 1; i < num; i++) {
-      const parent = Math.floor(Math.random() * i);
+    for (let i = 2; i <= num; i++) {
+      const parent = Math.floor(Math.random() * (i - 1)) + 1;
       ls.push({ source: parent, target: i });
       ls.push({ source: i, target: parent });
     }
@@ -64,41 +64,58 @@ export default function Sandbox() {
 
   function generateRootedTree() {
     const num = Math.min(Math.floor(Math.random() * 10) + 5, 10);
-    const ns = Array.from({ length: num }, (_, i) => ({ id: i }));
+    const ns = Array.from({ length: num }, (_, i) => ({ id: i + 1 }));
     const ls = [];
-    for (let i = 1; i < num; i++) {
-      const parent = Math.floor(Math.random() * i);
+    for (let i = 2; i <= num; i++) {
+      const parent = Math.floor(Math.random() * (i - 1)) + 1;
       ls.push({ source: parent, target: i });
     }
     updateGraph(ns, ls, true, true);
   }
 
   function addNode() {
-    const newId = nodes.length;
+    const newId = nodes.length + 1;
     const ns = [...nodes, { id: newId }];
-    const ls = [...links];
-    if (isTree && directed) {
-      ls.push({ source: 0, target: newId });
+    let ls = [...links];
+    if (isTree) {
+      const parent = Math.floor(Math.random() * (newId - 1)) + 1;
+      ls.push({ source: parent, target: newId });
+    } else if (!directed) {
+      // graf neorientat: legături simetrice
+      const neighbor = Math.floor(Math.random() * (newId - 1)) + 1;
+      ls.push({ source: newId, target: neighbor });
+      ls.push({ source: neighbor, target: newId });
+    } else {
+      // graf orientat: o singură muchie
+      const neighbor = Math.floor(Math.random() * (newId - 1)) + 1;
+      if (neighbor !== newId) ls.push({ source: newId, target: neighbor });
     }
     updateGraph(ns, ls, isTree, directed);
   }
 
   function removeLastNode() {
-    if (!nodes.length) return;
+    if (nodes.length === 0) return;
+    const removeId = nodes.length;
     const ns = nodes.slice(0, -1);
-    const ls = links.filter(l => {
+    // filter out any link touching the removed id
+    const raw = links.filter(l => {
       const s = typeof l.source === 'object' ? l.source.id : l.source;
       const t = typeof l.target === 'object' ? l.target.id : l.target;
-      return s < ns.length && t < ns.length;
+      return s !== removeId && t !== removeId;
     });
+    // normalize links to primitive form for matrix generation
+    const ls = raw.map(l => ({
+      source: typeof l.source === 'object' ? l.source.id : l.source,
+      target: typeof l.target === 'object' ? l.target.id : l.target
+    }));
     updateGraph(ns, ls, isTree, directed);
   }
 
   function generateAdjacencyMatrix(n, links) {
     const m = Array.from({ length: n }, () => Array(n).fill(0));
     links.forEach(l => {
-      const s = typeof l.source === 'object' ? l.source.id : l.source;
-      const t = typeof l.target === 'object' ? l.target.id : l.target;
+      const s = l.source - 1;
+      const t = l.target - 1;
       if (s >= 0 && s < n && t >= 0 && t < n) m[s][t] = 1;
     });
     return m;
@@ -106,7 +123,12 @@ export default function Sandbox() {
 
   function handleMatrixChange(i, j, value) {
     const newMatrix = matrix.map(row => [...row]);
-    newMatrix[i][j] = Number(value);
+    const num = Number(value);
+    newMatrix[i][j] = num;
+    // Dacă graful este neorientat, actualizăm și simetrica
+    if (!directed) {
+      newMatrix[j][i] = num;
+    }
     setMatrix(newMatrix);
   }
 
@@ -114,7 +136,7 @@ export default function Sandbox() {
     const ns = nodes.map(n => ({ id: n.id }));
     const ls = [];
     matrix.forEach((row, i) => row.forEach((val, j) => {
-      if (val === 1) ls.push({ source: i, target: j });
+      if (val === 1) ls.push({ source: i + 1, target: j + 1 });
     }));
     updateGraph(ns, ls, isTree, directed);
   }
@@ -167,9 +189,15 @@ export default function Sandbox() {
       return;
     }
 
-    // Rooted tree
-    const stratify = d3.stratify().id(d => d.id).parentId(d => d.parentId);
-    const data = nodesData.map(n => ({ id: n.id.toString(), parentId: n.id === 0 ? null : linksData.find(l => l.target === n.id).source.toString() }));
+    // Rooted tree layout
+    const stratify = d3.stratify()
+      .id(d => d.id)
+      .parentId(d => (d.parentId === null ? null : d.parentId));
+    const data = nodesData.map(n => {
+      const child = n.id;
+      const parentLink = linksData.find(l => l.target === child);
+      return { id: child.toString(), parentId: child === 1 ? null : parentLink ? parentLink.source.toString() : null };
+    });
     const root = stratify(data);
     const treeLayout = d3.tree().size([width, height]);
     treeLayout(root);
@@ -179,44 +207,109 @@ export default function Sandbox() {
       .attr('d', d3.linkVertical().x(d => d.x).y(d => d.y));
 
     g.selectAll('circle.node').data(root.descendants()).enter().append('circle')
-      .attr('class', 'node').attr('r', d => d.data.id === '0' ? 12 : 8)
-      .attr('fill', d => d.data.id === '0' ? 'orange' : '#007bff')
+      .attr('class', 'node').attr('r', d => d.data.id === '1' ? 12 : 8)
+      .attr('fill', d => d.data.id === '1' ? 'orange' : '#007bff')
       .attr('cx', d => d.x).attr('cy', d => d.y);
 
     g.selectAll('text.label').data(root.descendants()).enter().append('text')
       .attr('class', 'label').text(d => d.data.id).attr('font-size', '10px')
-      .attr('x', d => d.x).attr('y', d => d.y - (d.data.id === '0' ? 16 : 12))
+      .attr('x', d => d.x).attr('y', d => d.y - (d.data.id === '1' ? 16 : 12))
       .attr('text-anchor', 'middle');
   }
 
+  const parentVector = isTree ? nodes.map(n => n.id === 1 ? 0 : (
+    (() => {
+      const link = links.find(l => l.target === n.id);
+      return link ? link.source : null;
+    })()
+  )) : null;
+
+  useEffect(() => {
+    if (nodes.length) draw(nodes, links, isTree, directed);
+  }, [nodes, links, isTree, directed]);
+
   return (
-    <div style={layoutStyle}>
-      <div style={controlsStyle}>
-        <button style={buttonStyle} onClick={generateUndirected}>Graf Neorientat</button>
-        <button style={buttonStyle} onClick={generateDirected}>Graf Orientat</button>
-        <button style={buttonStyle} onClick={generateFreeTree}>Arbore Liber</button>
-        <button style={buttonStyle} onClick={generateRootedTree}>Arbore cu Rădăcină</button>
-        <button style={buttonStyle} onClick={addNode}>Adaugă Nod</button>
-        <button style={buttonStyle} onClick={removeLastNode}>Elimină Nod</button>
-      </div>
-      <div>
-        <div ref={containerRef} style={containerStyle}><svg ref={graphRef} width="100%" height="100%" /></div>
-        <button onClick={refreshGraphFromMatrix} style={{ marginTop: '1rem', padding: '0.5rem 1rem' }}>Reîmprospătează Graf</button>
-        {matrix.length > 0 && (
-          <table style={{ margin:'1rem auto', borderCollapse:'collapse' }}>
-            <thead><tr><th></th>{matrix.map((_,j)=><th key={j} style={{ border:'1px solid #aaa', padding:'4px' }}>{j}</th>)}</tr></thead>
-            <tbody>
-              {matrix.map((row,i)=>(<tr key={i}><th style={{ border:'1px solid #aaa', padding:'4px' }}>{i}</th>{row.map((val,j)=>(
-                <td key={j} style={{ border:'1px solid #aaa', padding:'2px' }}>
-                  <select value={val} onChange={e=>handleMatrixChange(i,j,e.target.value)}>
-                    <option value={0}>0</option><option value={1}>1</option>
-                  </select>
-                </td>
-              ))}</tr>))}
-            </tbody>
-          </table>
+    <div className="flex h-full">
+      {/* Left: controls + enlarged graph + matrix/vector */}
+      <div className="w-3/5 flex flex-col space-y-3 p-3">
+        {/* Compact Controls */}
+        <div className="bg-white p-2 shadow rounded">
+          <h2 className="text-lg font-medium mb-1">Controls</h2>
+          <div className="grid grid-cols-2 gap-1 text-sm">
+            <button onClick={generateUndirected} className="px-2 py-1 bg-blue text-white rounded hover:bg-blue/90">Neorientat</button>
+            <button onClick={generateDirected} className="px-2 py-1 bg-blue text-white rounded hover:bg-blue/90">Orientat</button>
+            <button onClick={generateFreeTree} className="px-2 py-1 bg-blue text-white rounded hover:bg-blue/90">Arbore</button>
+            <button onClick={generateRootedTree} className="px-2 py-1 bg-blue text-white rounded hover:bg-blue/90">Rădăcină</button>
+            <button onClick={addNode} className="px-2 py-1 bg-green-500 text-white rounded hover:bg-green-600">+ Nod</button>
+            <button onClick={removeLastNode} className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600">- Nod</button>
+          </div>
+        </div>
+
+        {/* Enlarged Graph Container */}
+        <div ref={containerRef} className="h-96 border border-gray-300 rounded overflow-hidden">
+          <svg ref={graphRef} className="w-full h-full" />
+        </div>
+
+        <button onClick={refreshGraphFromMatrix} className="self-start px-3 py-1 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700">Refresh</button>
+
+        {/* Adjacency Matrix or Parent Vector */}
+        {!isTree ? (
+          <div className="overflow-auto max-h-48 border-t pt-2">
+            <h3 className="text-sm font-medium mb-1">Matrice Adiacentă</h3>
+            <table className="w-full table-auto border-collapse text-xs">
+              <thead>
+                <tr>
+                  <th className="p-1"></th>
+                  {matrix.map((_, j) => (
+                    <th key={j} className="p-1 border">{j + 1}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {matrix.map((row, i) => (
+                  <tr key={i}>
+                    <th className="p-1 border">{i + 1}</th>
+                    {row.map((val, j) => (
+                      <td key={j} className="p-1 border text-center">
+                        <select value={val} onChange={e => handleMatrixChange(i, j, e.target.value)} className="w-full text-xs p-0 bg-white">
+                          <option value={0}>0</option>
+                          <option value={1}>1</option>
+                        </select>
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="pt-2 border-t text-sm font-mono">
+            <strong>Vector părinți:</strong> [{nodes.map(n => n.id === 1 ? 0 : (links.find(l => l.target === n.id)?.source || 0)).join(', ')}]
+          </div>
         )}
       </div>
+
+      {/* Right: mini-test */}
+      <aside className="w-2/5 border-l border-gray-200 p-4 overflow-auto">
+        <h2 className="text-xl font-semibold mb-4">Mini Test</h2>
+        <div className="space-y-4 text-sm">
+          <div>
+            <p className="font-medium">1. Câte componente conexe?</p>
+            <input type="number" className="mt-1 w-full p-1 border rounded text-sm" />
+          </div>
+          <div>
+            <p className="font-medium">2. Câte cicluri?</p>
+            <input type="number" className="mt-1 w-full p-1 border rounded text-sm" />
+          </div>
+          <div>
+            <p className="font-medium">3. Graf orientat?</p>
+            <select className="mt-1 w-full p-1 border rounded text-sm">
+              <option value="true">Da</option>
+              <option value="false">Nu</option>
+            </select>
+          </div>
+        </div>
+      </aside>
     </div>
   );
 }
