@@ -13,7 +13,10 @@ import { drawGraph } from './sandbox/GraphView';
 import {
   generateAdjacencyMatrix,
   generateAdjList,
-  generateEdgeList
+  generateEdgeList,
+  generateIncidenceMatrix,
+  generatePathMatrix,
+  generateParentVector
 } from './sandbox/GraphRepresentation';
 
 export default function Sandbox() {
@@ -23,10 +26,10 @@ export default function Sandbox() {
   const [links, setLinks] = useState([]);
   const [directed, setDirected] = useState(true);
   const [isTree, setIsTree] = useState(false);
-  const [layoutMode, setLayoutMode] = useState('matrix'); // 'matrix', 'adjList', 'edgeList'
+  const [layoutMode, setLayoutMode] = useState('matrix');
   const [matrix, setMatrix] = useState([]);
 
-  // initialize empty graph
+  // Initialize empty graph
   useEffect(() => {
     const { nodes: ns, links: ls } = generateDirected(5);
     updateGraph(ns, ls, false, true);
@@ -39,57 +42,97 @@ export default function Sandbox() {
     setIsTree(treeMode);
     setMatrix(generateAdjacencyMatrix(ns.length, ls));
     drawGraph(graphRef.current, ns, ls, treeMode, dirMode);
+    // reset layout to first valid mode
+    const modes = getModes(treeMode, dirMode);
+    setLayoutMode(modes[0].value);
+  }
+
+  function getModes(treeMode, dirMode) {
+    if (treeMode && dirMode) return [{ value: 'parent', label: 'Vector Părinți' }];
+    const base = [
+      { value: 'matrix', label: 'Matrice Adiacentă' },
+      { value: 'adjList', label: 'Liste Vecini' },
+      { value: 'edgeList', label: 'Vector Muchii' }
+    ];
+    if (dirMode) {
+      return base.concat([
+        { value: 'incidence', label: 'Matrice Incidență' },
+        { value: 'path', label: 'Matrice Drumuri' }
+      ]);
+    }
+    return base;
   }
 
   // Handlers
   const handleGenerateUndirected = () => {
-    const { nodes: ns, links: ls } = generateUndirected( Math.min(Math.floor(Math.random() * 10) + 5, 10) );
+    const { nodes: ns, links: ls } = generateUndirected(Math.min(Math.floor(Math.random() * 10) + 5, 10));
     updateGraph(ns, ls, false, false);
   };
   const handleGenerateDirected = () => {
-    const { nodes: ns, links: ls } = generateDirected( Math.min(Math.floor(Math.random() * 10) + 5, 10) );
+    const { nodes: ns, links: ls } = generateDirected(Math.min(Math.floor(Math.random() * 10) + 5, 10));
     updateGraph(ns, ls, false, true);
   };
   const handleGenerateFreeTree = () => {
-    const { nodes: ns, links: ls } = generateFreeTree( Math.min(Math.floor(Math.random() * 10) + 5, 10) );
+    const { nodes: ns, links: ls } = generateFreeTree(Math.min(Math.floor(Math.random() * 10) + 5, 10));
     updateGraph(ns, ls, false, false);
   };
   const handleGenerateRootedTree = () => {
-    const { nodes: ns, links: ls } = generateRootedTree( Math.min(Math.floor(Math.random() * 10) + 5, 10) );
+    const { nodes: ns, links: ls } = generateRootedTree(Math.min(Math.floor(Math.random() * 10) + 5, 10));
     updateGraph(ns, ls, true, true);
   };
   const handleAddNode = () => {
     const { nodes: ns, links: ls } = addNode(nodes, links, directed, isTree);
     updateGraph(ns, ls, isTree, directed);
+    // Preserve existing matrix when adding a node
+    const oldMatrix = matrix;
+    const newSize = oldMatrix.length + 1;
+    // extend rows
+    const newMatrix = oldMatrix.map(row => [...row, 0]);
+    // add new row
+    newMatrix.push(Array(newSize).fill(0));
+    // mark the new edges in the matrix
+    ls.forEach(l => {
+      const s = typeof l.source === 'object' ? l.source.id : l.source;
+      const t = typeof l.target === 'object' ? l.target.id : l.target;
+      if (s === newSize || t === newSize) {
+        newMatrix[s - 1][t - 1] = 1;
+        if (!directed) newMatrix[t - 1][s - 1] = 1;
+      }
+    });
+    setMatrix(newMatrix);
   };
   const handleRemoveLastNode = () => {
     const { nodes: ns, links: ls } = removeLastNode(nodes, links);
     updateGraph(ns, ls, isTree, directed);
+    // Preserve existing matrix when removing a node
+    const oldMatrix = matrix;
+    const newMatrix = oldMatrix
+      .slice(0, -1)
+      .map(row => row.slice(0, -1));
+    setMatrix(newMatrix);
   };
-  
-  // Update matrix & links on cell change
+
+  // Matrix cell edit
   function handleMatrixCellChange(i, j, value) {
     const newMatrix = matrix.map(row => [...row]);
     const num = Number(value);
     newMatrix[i][j] = num;
     if (!directed) newMatrix[j][i] = num;
     setMatrix(newMatrix);
-
-    // Sync links with matrix edits
-    let updatedLinks = links.filter(l => {
+    // sync links
+    let updated = links.filter(l => {
       const s = typeof l.source === 'object' ? l.source.id : l.source;
       const t = typeof l.target === 'object' ? l.target.id : l.target;
-      // keep existing links unchanged unless it matches edited cell
-      if (s === i+1 && t === j+1) return num === 1;
-      if (!directed && s === j+1 && t === i+1) return num === 1;
+      if (s === i + 1 && t === j + 1) return num === 1;
+      if (!directed && s === j + 1 && t === i + 1) return num === 1;
       return true;
     });
     if (num === 1) {
-      updatedLinks.push({ source: i+1, target: j+1 });
-      if (!directed) updatedLinks.push({ source: j+1, target: i+1 });
+      updated.push({ source: i + 1, target: j + 1 });
+      if (!directed) updated.push({ source: j + 1, target: i + 1 });
     }
-    setLinks(updatedLinks);
-    drawGraph(graphRef.current, nodes, updatedLinks, isTree, directed);
+    setLinks(updated);
+    drawGraph(graphRef.current, nodes, updated, isTree, directed);
   }
 
   // Refresh is now optional since links auto-sync
@@ -97,14 +140,13 @@ export default function Sandbox() {
     updateGraph(nodes, links, isTree, directed);
   }
 
-  // Redraw on state change
-  useEffect(() => {
-    if (nodes.length) drawGraph(graphRef.current, nodes, links, isTree, directed);
-  }, [nodes, links, isTree, directed]);
-
-  // Representations
+  // Derive representations
   const adjList = generateAdjList(nodes.length, links);
   const edgeList = generateEdgeList(links);
+  const incidenceMatrix = directed ? generateIncidenceMatrix(nodes.length, links, true) : null;
+  const pathMatrix = directed ? generatePathMatrix(nodes.length, links) : null;
+  const parentVector = isTree && directed ? generateParentVector(nodes.length, links) : null;
+  const modes = getModes(isTree, directed);
 
   return (
     <div className="flex h-full">
@@ -124,11 +166,11 @@ export default function Sandbox() {
           <svg ref={graphRef} className="w-full h-full" />
         </div>
         <div className="flex items-center space-x-2">
-          <button onClick={handleRefreshFromMatrix} className="px-3 py-1 bg-indigo-600 text-white text-sm rounded">Refresh</button>
+          <button onClick={handleRefreshFromMatrix} className="px-2 py-1 bg-indigo-600 text-white rounded">Reîmprospătează</button>
           <select value={layoutMode} onChange={e => setLayoutMode(e.target.value)} className="px-2 py-1 border rounded text-sm">
-            <option value="matrix">Matrice Adiacentă</option>
-            <option value="adjList">Liste Vecini</option>
-            <option value="edgeList">Vector Muchii</option>
+            {modes.map(m => (
+              <option key={m.value} value={m.value}>{m.label}</option>
+            ))}
           </select>
         </div>
         <div className="overflow-auto max-h-48 border-t pt-2 text-sm">
@@ -137,61 +179,78 @@ export default function Sandbox() {
               <h3 className="font-medium">Matrice Adiacentă</h3>
               <table className="w-full table-auto border-collapse text-xs">
                 <thead>
-                  <tr>
-                    <th className="p-1"></th>
-                    {matrix.map((_, j) => <th key={j} className="p-1 border">{j+1}</th>)}
-                  </tr>
+                  <tr><th className="p-1"></th>{matrix.map((_, j) => <th key={j} className="p-1 border">{j+1}</th>)}</tr>
                 </thead>
-                <tbody>
-                  {matrix.map((row, i) => (
-                    <tr key={i}>
-                      <th className="p-1 border">{i+1}</th>
-                      {row.map((val, j) => (
-                        <td key={j} className="p-1 border text-center">
-                          <select value={val} onChange={e => handleMatrixCellChange(i, j, e.target.value)} className="w-full text-xs p-0">
-                            <option value={0}>0</option>
-                            <option value={1}>1</option>
-                          </select>
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
+                <tbody>{matrix.map((row, i) => (
+                  <tr key={i}><th className="p-1 border">{i+1}</th>
+                    {row.map((val, j) => (
+                      <td key={j} className="p-1 border text-center">
+                        <select value={val} onChange={e => handleMatrixCellChange(i, j, e.target.value)} className="w-full text-xs p-0">
+                          <option value={0}>0</option><option value={1}>1</option>
+                        </select>
+                      </td>
+                    ))}
+                  </tr>
+                ))}</tbody>
               </table>
             </>
           )}
           {layoutMode === 'adjList' && (
-            <div>
+            <>
               <h3 className="font-medium">Liste Vecini</h3>
               <pre>{JSON.stringify(adjList, null, 2)}</pre>
-            </div>
+            </>
           )}
           {layoutMode === 'edgeList' && (
-            <div>
+            <>
               <h3 className="font-medium">Vector Muchii</h3>
               <pre>{JSON.stringify(edgeList, null, 2)}</pre>
-            </div>
+            </>
+          )}
+          {layoutMode === 'incidence' && incidenceMatrix && (
+            <>
+              <h3 className="font-medium">Matrice Incidență</h3>
+              <table className="w-full table-auto border-collapse text-xs">
+                <thead>
+                  <tr><th className="p-1"></th>{links.map((_, j) => <th key={j} className="p-1 border">e{j+1}</th>)}</tr>
+                </thead>
+                <tbody>{incidenceMatrix.map((row, i) => (
+                  <tr key={i}><th className="p-1 border">{i+1}</th>
+                    {row.map((v, j) => <td key={j} className="p-1 border text-center">{v}</td>)}
+                  </tr>
+                ))}</tbody>
+              </table>
+            </>
+          )}
+          {layoutMode === 'path' && pathMatrix && (
+            <>
+              <h3 className="font-medium">Matrice Drumuri</h3>
+              <table className="w-full table-auto border-collapse text-xs">
+                <thead>
+                  <tr><th className="p-1"></th>{pathMatrix.map((_, j) => <th key={j} className="p-1 border">{j+1}</th>)}</tr>
+                </thead>
+                <tbody>{pathMatrix.map((row, i) => (
+                  <tr key={i}><th className="p-1 border">{i+1}</th>
+                    {row.map((v, j) => <td key={j} className="p-1 border text-center">{v}</td>)}
+                  </tr>
+                ))}</tbody>
+              </table>
+            </>
+          )}
+          {layoutMode === 'parent' && parentVector && (
+            <>
+              <h3 className="font-medium">Vector Părinți</h3>
+              <div>[{parentVector.join(', ')}]</div>
+            </>
           )}
         </div>
       </div>
       <aside className="w-2/5 border-l border-gray-200 p-4 overflow-auto text-sm">
         <h2 className="text-xl font-semibold mb-4">Mini Test</h2>
         <div className="space-y-4">
-          <div>
-            <p className="font-medium">1. Câte componente conexe?</p>
-            <input type="number" className="mt-1 w-full p-1 border rounded text-sm" />
-          </div>
-          <div>
-            <p className="font-medium">2. Câte cicluri?</p>
-            <input type="number" className="mt-1 w-full p-1 border rounded text-sm" />
-          </div>
-          <div>
-            <p className="font-medium">3. Graf orientat?</p>
-            <select className="mt-1 w-full p-1 border rounded text-sm">
-              <option value="true">Da</option>
-              <option value="false">Nu</option>
-            </select>
-          </div>
+          <div><p className="font-medium">1. Câte componente conexe?</p><input type="number" className="mt-1 w-full p-1 border rounded text-sm" /></div>
+          <div><p className="font-medium">2. Câte cicluri?</p><input type="number" className="mt-1 w-full p-1 border rounded text-sm" /></div>
+          <div><p className="font-medium">3. Graf orientat?</p><select className="mt-1 w-full p-1 border rounded text-sm"><option value="true">Da</option><option value="false">Nu</option></select></div>
         </div>
       </aside>
     </div>
