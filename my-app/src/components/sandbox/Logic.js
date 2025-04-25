@@ -1,96 +1,113 @@
-export function generateGraph(type) {
-    if (type === 'directed') return generateDirected();
-    if (type === 'undirected') return generateUndirected();
-    if (type === 'freeTree') return generateFreeTree();
-    if (type === 'rootedTree') return generateRootedTree();
-    return { nodes: [], links: [], directed: true, isTree: false };
+// src/utils/Logic.js
+
+/**
+ * Generates a random directed graph.
+ * @param {number} numNodes
+ * @returns {{ nodes: Array<{id:number}>, links: Array<{source:number, target:number}> }}
+ */
+export function generateDirected(numNodes = 5) {
+  const nodes = Array.from({ length: numNodes }, (_, i) => ({ id: i + 1 }));
+  const links = [];
+  for (let i = 1; i <= numNodes; i++) {
+    const t = Math.floor(Math.random() * numNodes) + 1;
+    if (i !== t) links.push({ source: i, target: t });
   }
-  
-  function generateDirected() {
-    const num = Math.min(Math.floor(Math.random() * 10) + 5, 10);
-    const nodes = Array.from({ length: num }, (_, i) => ({ id: i + 1 }));
-    const links = [];
-    for (let i = 1; i <= num; i++) {
-      const t = Math.floor(Math.random() * num) + 1;
-      if (i !== t) links.push({ source: i, target: t });
-    }
-    return { nodes, links, directed: true, isTree: false };
-  }
-  
-  function generateUndirected() {
-    const num = Math.min(Math.floor(Math.random() * 10) + 5, 10);
-    const nodes = Array.from({ length: num }, (_, i) => ({ id: i + 1 }));
-    const links = [];
-    for (let i = 1; i <= num; i++) {
-      for (let j = i + 1; j <= num; j++) {
-        if (Math.random() < 0.3) {
-          links.push({ source: i, target: j });
-          links.push({ source: j, target: i });
-        }
+  return { nodes, links };
+}
+
+/**
+ * Generates a random undirected graph.
+ * @param {number} numNodes
+ * @returns {{ nodes: Array<{id:number}>, links: Array<{source:number, target:number}> }}
+ */
+export function generateUndirected(numNodes = 5) {
+  const nodes = Array.from({ length: numNodes }, (_, i) => ({ id: i + 1 }));
+  const links = [];
+  for (let i = 1; i <= numNodes; i++) {
+    for (let j = i + 1; j <= numNodes; j++) {
+      if (Math.random() < 0.3) {
+        links.push({ source: i, target: j });
+        links.push({ source: j, target: i });
       }
     }
-    return { nodes, links, directed: false, isTree: false };
   }
-  
-  function generateFreeTree() {
-    const num = Math.min(Math.floor(Math.random() * 10) + 5, 10);
-    const nodes = Array.from({ length: num }, (_, i) => ({ id: i + 1 }));
-    const links = [];
-    for (let i = 2; i <= num; i++) {
-      const p = Math.floor(Math.random() * (i - 1)) + 1;
-      links.push({ source: p, target: i }, { source: i, target: p });
-    }
-    return { nodes, links, directed: false, isTree: false };
+  return { nodes, links };
+}
+
+/**
+ * Generates a free (unrooted) tree.
+ * @param {number} numNodes
+ * @returns {{ nodes: Array<{id:number}>, links: Array<{source:number, target:number}> }}
+ */
+export function generateFreeTree(numNodes = 5) {
+  const nodes = Array.from({ length: numNodes }, (_, i) => ({ id: i + 1 }));
+  const links = [];
+  for (let i = 2; i <= numNodes; i++) {
+    const parent = Math.floor(Math.random() * (i - 1)) + 1;
+    links.push({ source: parent, target: i });
+    links.push({ source: i, target: parent });
   }
-  
-  function generateRootedTree() {
-    const num = Math.min(Math.floor(Math.random() * 10) + 5, 10);
-    const nodes = Array.from({ length: num }, (_, i) => ({ id: i + 1 }));
-    const links = [];
-    for (let i = 2; i <= num; i++) {
-      const p = Math.floor(Math.random() * (i - 1)) + 1;
-      links.push({ source: p, target: i });
-    }
-    return { nodes, links, directed: true, isTree: true };
+  return { nodes, links };
+}
+
+/**
+ * Generates a rooted tree (directed).
+ * @param {number} numNodes
+ * @returns {{ nodes: Array<{id:number}>, links: Array<{source:number, target:number}> }}
+ */
+export function generateRootedTree(numNodes = 5) {
+  const nodes = Array.from({ length: numNodes }, (_, i) => ({ id: i + 1 }));
+  const links = [];
+  for (let i = 2; i <= numNodes; i++) {
+    const parent = Math.floor(Math.random() * (i - 1)) + 1;
+    links.push({ source: parent, target: i });
   }
-  
-  export function addNodeLogic({ nodes, links, directed, isTree }) {
-    const newId = nodes.length + 1;
-    const ns = [...nodes, { id: newId }];
-    let ls = [...links];
-    if (isTree) {
-      const p = Math.floor(Math.random() * (newId - 1)) + 1;
-      ls.push({ source: p, target: newId });
-    } else if (!directed) {
-      const n = Math.floor(Math.random() * (newId - 1)) + 1;
-      ls.push({ source: newId, target: n }, { source: n, target: newId });
-    } else {
-      const n = Math.floor(Math.random() * (newId - 1)) + 1;
-      if (n !== newId) ls.push({ source: newId, target: n });
-    }
-    return { nodes: ns, links: ls, directed, isTree };
+  return { nodes, links };
+}
+
+/**
+ * Adds a node to the graph, updating links accordingly.
+ * For a rooted tree, if it's the first node it becomes root; otherwise it's connected under a random parent.
+ */
+export function addNode(nodes, links, directed = true, isTree = false) {
+  // Determine new node id
+  const currentMaxId = nodes.reduce((max, n) => Math.max(max, n.id), 0);
+  const newId = currentMaxId + 1;
+  const newNodes = [...nodes, { id: newId }];
+  const newLinks = [...links];
+
+  if (nodes.length === 0) {
+    // First node: becomes root of tree or isolated node
+  } else if (isTree) {
+    // Connect new node under a random existing node as parent
+    const parentId = nodes[Math.floor(Math.random() * nodes.length)].id;
+    newLinks.push({ source: parentId, target: newId });
+  } else if (!directed) {
+    // Undirected: connect bidirectionally to a random existing node
+    const neighborId = nodes[Math.floor(Math.random() * nodes.length)].id;
+    newLinks.push({ source: newId, target: neighborId });
+    newLinks.push({ source: neighborId, target: newId });
+  } else {
+    // Directed: connect from new node to a random existing node
+    const neighborId = nodes[Math.floor(Math.random() * nodes.length)].id;
+    newLinks.push({ source: newId, target: neighborId });
   }
-  
-  export function removeNodeLogic({ nodes, links, directed, isTree }) {
-    if (!nodes.length) return { nodes, links, directed, isTree };
-    const id = nodes.length;
-    const ns = nodes.slice(0, -1);
-    const ls = links.filter(l => l.source !== id && l.target !== id);
-    return { nodes: ns, links: ls, directed, isTree };
-  }
-  
-  export function generateAdjacencyMatrix(n, links) {
-    const m = Array.from({ length: n }, () => Array(n).fill(0));
-    links.forEach(l => { m[l.source - 1][l.target - 1] = 1; });
-    return m;
-  }
-  
-  export function updateMatrixLogic(prev) {
-    return prev.slice(0, -1).map(row => row.slice(0, -1));
-  }
-  
-  export function handleMatrixEditLogic(matrix, { nodes }) {
-    const ls = [];
-    matrix.forEach((row, i) => row.forEach((v, j) => { if (v) ls.push({ source: i + 1, target: j + 1 }); }));
-    return ls;
-  }
+
+  return { nodes: newNodes, links: newLinks };
+}
+
+/**
+ * Removes the last node (highest id) and all connected edges.
+ */
+export function removeLastNode(nodes, links) {
+  if (nodes.length === 0) return { nodes, links };
+  const ids = nodes.map(n => n.id);
+  const removeId = Math.max(...ids);
+  const newNodes = nodes.filter(n => n.id !== removeId);
+  const newLinks = links.filter(l => {
+    const s = typeof l.source === 'object' ? l.source.id : l.source;
+    const t = typeof l.target === 'object' ? l.target.id : l.target;
+    return s !== removeId && t !== removeId;
+  });
+  return { nodes: newNodes, links: newLinks };
+}
