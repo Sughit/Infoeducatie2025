@@ -48,16 +48,16 @@ export default function Sandbox() {
   }
 
   function getModes(treeMode, dirMode) {
-    if (treeMode && dirMode) return [{ value: 'parent', label: 'Vector Părinți' }];
+    if (treeMode && dirMode) return [{ value: 'parent', label: 'Vectorul de Tați' }];
     const base = [
-      { value: 'matrix', label: 'Matrice Adiacentă' },
-      { value: 'adjList', label: 'Liste Vecini' },
-      { value: 'edgeList', label: 'Vector Muchii' }
+      { value: 'matrix', label: 'Matricea de Adiacentă' },
+      { value: 'adjList', label: 'Listele Vecinilor' },
+      { value: 'edgeList', label: 'Vectorul Muchie' }
     ];
     if (dirMode) {
       return base.concat([
-        { value: 'incidence', label: 'Matrice Incidență' },
-        { value: 'path', label: 'Matrice Drumuri' }
+        { value: 'incidence', label: 'Matricea de Incidență' },
+        { value: 'path', label: 'Matricea Drumurilor' }
       ]);
     }
     return base;
@@ -154,10 +154,10 @@ export default function Sandbox() {
         <div className="bg-white p-2 shadow rounded">
           <h2 className="text-lg font-medium mb-1">Controls</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-sm">
-            <button onClick={handleGenerateUndirected} className="px-2 py-1 bg-blue text-white rounded">Neorientat</button>
-            <button onClick={handleGenerateDirected} className="px-2 py-1 bg-blue text-white rounded">Orientat</button>
-            <button onClick={handleGenerateFreeTree} className="px-2 py-1 bg-blue text-white rounded">Arbore</button>
-            <button onClick={handleGenerateRootedTree} className="px-2 py-1 bg-blue text-white rounded">Rădăcină</button>
+            <button onClick={handleGenerateUndirected} className="px-2 py-1 bg-blue text-white rounded">Graf Neorientat</button>
+            <button onClick={handleGenerateDirected} className="px-2 py-1 bg-blue text-white rounded">Graf Orientat</button>
+            <button onClick={handleGenerateFreeTree} className="px-2 py-1 bg-blue text-white rounded">Arbore Liber</button>
+            <button onClick={handleGenerateRootedTree} className="px-2 py-1 bg-blue text-white rounded">Arbore cu Rădăcină</button>
             <button onClick={handleAddNode} className="px-2 py-1 bg-green-500 text-white rounded">+ Nod</button>
             <button onClick={handleRemoveLastNode} className="px-2 py-1 bg-red-500 text-white rounded">- Nod</button>
           </div>
