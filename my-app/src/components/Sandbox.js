@@ -172,42 +172,56 @@ export default function Sandbox() {
           </select>
         </div>
         <div className="overflow-auto max-h-48 border-t pt-2 text-sm">
-          {layoutMode === 'matrix' && (
-            <>
-              <h3 className="font-medium">Matrice Adiacentă</h3>
-              <table className="w-full table-auto border-collapse text-xs">
-                <thead>
-                  <tr><th className="p-1"></th>{matrix.map((_, j) => <th key={j} className="p-1 border">{j+1}</th>)}</tr>
-                </thead>
-                <tbody>{matrix.map((row, i) => (
-                  <tr key={i}><th className="p-1 border">{i+1}</th>
+        {layoutMode === 'matrix' && (
+            <table className="w-full table-auto border-collapse text-xs">
+              <thead>
+                <tr><th className="p-1"></th>{matrix.map((_, j) => <th key={j} className="p-1 border">{j+1}</th>)}</tr>
+              </thead>
+              <tbody>
+                {matrix.map((row, i) => (
+                  <tr key={i}>
+                    <th className="p-1 border">{i+1}</th>
                     {row.map((val, j) => (
                       <td key={j} className="p-1 border text-center">
-                        <select value={val} onChange={e => handleMatrixCellChange(i, j, e.target.value)} className="w-full text-xs p-0">
-                          <option value={0}>0</option><option value={1}>1</option>
+                        <select value={val} onChange={e => handleMatrixCellChange(i, j, e.target.value)} className="w-full text-xs p-0 bg-white">
+                          <option value={0}>0</option>
+                          <option value={1}>1</option>
                         </select>
                       </td>
                     ))}
                   </tr>
-                ))}</tbody>
-              </table>
-            </>
+                ))}
+              </tbody>
+            </table>
           )}
           {layoutMode === 'adjList' && (
-            <>
-              <h3 className="font-medium">Liste Vecini</h3>
-              <pre>{JSON.stringify(adjList, null, 2)}</pre>
-            </>
+            <table className="w-full table-auto border-collapse text-xs">
+              <thead>
+                <tr className="bg-gray-100"><th className="border px-2 py-1">Nod</th><th className="border px-2 py-1">Vecini</th></tr>
+              </thead>
+              <tbody>
+                {Object.entries(adjList).map(([node, nbrs]) => (
+                  <tr key={node}>
+                    <td className="border px-2 py-1 text-center">{node}</td>
+                    <td className="border px-2 py-1">[{nbrs.join(', ')}]</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
           {layoutMode === 'edgeList' && (
-            <>
-              <h3 className="font-medium">Vector Muchii</h3>
-              <pre>{JSON.stringify(edgeList, null, 2)}</pre>
-            </>
+            <table className="w-full table-auto border-collapse text-xs">
+              <thead>
+                <tr className="bg-gray-100">{edgeList.map((_, idx) => <th key={idx} className="border px-2 py-1">u{idx+1}</th>)}</tr>
+              </thead>
+              <tbody>
+                <tr>{edgeList.map(([s], idx)=><td key={idx} className="border px-2 py-1 text-center">{s}</td>)}</tr>
+                <tr>{edgeList.map(([,t], idx)=><td key={idx} className="border px-2 py-1 text-center">{t}</td>)}</tr>
+              </tbody>
+            </table>
           )}
           {layoutMode === 'incidence' && incidenceMatrix && (
             <>
-              <h3 className="font-medium">Matrice Incidență</h3>
               <table className="w-full table-auto border-collapse text-xs">
                 <thead>
                   <tr><th className="p-1"></th>{links.map((_, j) => <th key={j} className="p-1 border">u{j+1}</th>)}</tr>
@@ -236,10 +250,22 @@ export default function Sandbox() {
             </>
           )}
           {layoutMode === 'parent' && parentVector && (
-            <>
-              <h3 className="font-medium">Vector Părinți</h3>
-              <div>[{parentVector.join(', ')}]</div>
-            </>
+            <table className="w-full table-auto border-collapse text-xs">
+              <tbody>
+                <tr>
+                  <th className="border px-2 py-1">i</th>
+                  {parentVector.map((_, idx) => (
+                    <td key={idx} className="border px-2 py-1 text-center">{idx + 1}</td>
+                  ))}
+                </tr>
+                <tr>
+                  <th className="border px-2 py-1">tata[i]</th>
+                  {parentVector.map((p, idx) => (
+                    <td key={idx} className="border px-2 py-1 text-center">{p}</td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
           )}
         </div>
       </div>
