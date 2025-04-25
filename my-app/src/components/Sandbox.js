@@ -136,13 +136,11 @@ export default function Sandbox() {
   }
 
   // Refresh is now optional since links auto-sync
-  function handleRefreshFromMatrix() {
-    updateGraph(nodes, links, isTree, directed);
-  }
+  const handleRefresh = () => updateGraph(nodes, links, isTree, directed);
 
   // Derive representations
   const adjList = generateAdjList(nodes.length, links);
-  const edgeList = generateEdgeList(links);
+  const edgeList = generateEdgeList(links, directed);
   const incidenceMatrix = directed ? generateIncidenceMatrix(nodes.length, links, true) : null;
   const pathMatrix = directed ? generatePathMatrix(nodes.length, links) : null;
   const parentVector = isTree && directed ? generateParentVector(nodes.length, links) : null;
@@ -166,7 +164,7 @@ export default function Sandbox() {
           <svg ref={graphRef} className="w-full h-full" />
         </div>
         <div className="flex items-center space-x-2">
-          <button onClick={handleRefreshFromMatrix} className="px-2 py-1 bg-indigo-600 text-white rounded">Reîmprospătează</button>
+          <button onClick={handleRefresh} className="px-2 py-1 bg-indigo-600 text-white rounded">Reîmprospătează</button>
           <select value={layoutMode} onChange={e => setLayoutMode(e.target.value)} className="px-2 py-1 border rounded text-sm">
             {modes.map(m => (
               <option key={m.value} value={m.value}>{m.label}</option>
@@ -212,7 +210,7 @@ export default function Sandbox() {
               <h3 className="font-medium">Matrice Incidență</h3>
               <table className="w-full table-auto border-collapse text-xs">
                 <thead>
-                  <tr><th className="p-1"></th>{links.map((_, j) => <th key={j} className="p-1 border">e{j+1}</th>)}</tr>
+                  <tr><th className="p-1"></th>{links.map((_, j) => <th key={j} className="p-1 border">u{j+1}</th>)}</tr>
                 </thead>
                 <tbody>{incidenceMatrix.map((row, i) => (
                   <tr key={i}><th className="p-1 border">{i+1}</th>
