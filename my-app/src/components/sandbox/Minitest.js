@@ -158,7 +158,8 @@ export default function MiniTest({ nodes, links, directed }) {
   useEffect(() => setScore(null), [nodes, links, directed]);
 
   return (
-    <div>
+    <div className="p-2">
+      <h3 className="text-lg font-semibold mb-4">Mini Test</h3>
       <form onSubmit={handleSubmit} className="space-y-4">
         {questions.map(q => (
           <div key={q.key}>
