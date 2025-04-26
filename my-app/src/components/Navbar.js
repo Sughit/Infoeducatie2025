@@ -28,8 +28,17 @@ export default function Navbar() {
 
   useEffect(() => {
     function outside(e) {
-      if (lessonsRef.current && !lessonsRef.current.contains(e.target)) setLessonsOpen(false)
-      if (testsRef.current   && !testsRef.current.contains(e.target))   setTestsOpen(false)
+      // 1) Dacă nu suntem în meniul mobile, închide lecțiile/testele la click în afara desktop-dropdown
+      if (!mobileOpen) {
+        if (lessonsRef.current && !lessonsRef.current.contains(e.target)) {
+          setLessonsOpen(false)
+        }
+        if (testsRef.current && !testsRef.current.contains(e.target)) {
+          setTestsOpen(false)
+        }
+      }
+  
+      // 2) Dacă suntem în meniul mobile, închide tot când dai click în afara întregului mobile menu
       if (
         mobileOpen &&
         mobileRef.current &&
@@ -42,6 +51,7 @@ export default function Navbar() {
         setTestsOpen(false)
       }
     }
+  
     document.addEventListener('mousedown', outside)
     return () => document.removeEventListener('mousedown', outside)
   }, [mobileOpen])

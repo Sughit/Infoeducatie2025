@@ -26,7 +26,7 @@ export default function Home() {
       items: [
         'Introducere în grafuri și arbori',
         'Parcurgerile DFS & BFS',
-        'Algoritmi de elementari',
+        'Algoritmi elementari',
       ],
       button: 'Accesează lecțiile',
       Illustration: LessonsIllustration
@@ -38,7 +38,7 @@ export default function Home() {
       items: [
         'Vizualizare pas cu pas a algoritmilor',
         'Slider interactiv pentru viteza simulării',
-        'Node-uri și muchii editabile'
+        'Noduri și muchii editabile'
       ],
       button: 'Începe simulările',
       Illustration: SimulationsIllustration
@@ -62,7 +62,7 @@ export default function Home() {
       items: [
         'Crează grafuri și arbori personalizați',
         'Modifică noduri și muchii',
-        'Vizualizarea grafurilor speciale'
+        'Vizualizează grafurile speciale'
       ],
       button: 'Accesează sandbox',
       Illustration: SandboxIllustration
