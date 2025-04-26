@@ -1,5 +1,5 @@
 // src/components/Sandbox.js
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import * as d3 from 'd3';
 import {
   generateDirected,
@@ -18,6 +18,7 @@ import {
   generatePathMatrix,
   generateParentVector
 } from './sandbox/GraphRepresentation';
+import MiniTest from './sandbox/Minitest';
 
 export default function Sandbox() {
   const graphRef = useRef();
@@ -28,6 +29,10 @@ export default function Sandbox() {
   const [isTree, setIsTree] = useState(false);
   const [layoutMode, setLayoutMode] = useState('matrix');
   const [matrix, setMatrix] = useState([]);
+
+  // Mini-test state
+  const [answers, setAnswers] = useState({ components: '', cycles: '', directed: directed.toString() });
+  const [score, setScore] = useState(null);
 
   // Initialize empty graph
   useEffect(() => {
@@ -41,10 +46,21 @@ export default function Sandbox() {
     setDirected(dirMode);
     setIsTree(treeMode);
     setMatrix(generateAdjacencyMatrix(ns.length, ls));
-    drawGraph(graphRef.current, ns, ls, treeMode, dirMode);
-    // reset layout to first valid mode
+    drawCurrentGraph(ns, ls, treeMode, dirMode);
     const modes = getModes(treeMode, dirMode);
     setLayoutMode(modes[0].value);
+    // reset answers
+    setAnswers({ components: '', cycles: '', directed: dirMode.toString() });
+    setScore(null);
+  }
+
+  function drawCurrentGraph(ns, ls, treeMode, dirMode) {
+    const svg = d3.select(graphRef.current);
+    svg.selectAll('*').remove();
+    // reuse existing drawGraph logic:
+    import('./sandbox/GraphView').then(({ drawGraph }) => {
+      drawGraph(graphRef.current, ns, ls, treeMode, dirMode);
+    });
   }
 
   function getModes(treeMode, dirMode) {
@@ -146,6 +162,49 @@ export default function Sandbox() {
   const parentVector = isTree && directed ? generateParentVector(nodes.length, links) : null;
   const modes = getModes(isTree, directed);
 
+  // MINI-TEST logic
+  const { components: correctComponents, cycles: correctCycles } = useMemo(() => {
+    // build undirected list for components
+    const undirected = generateAdjList(nodes.length, links, false);
+    const visited = new Set();
+    let compCount = 0;
+    function dfs(u) {
+      visited.add(u);
+      undirected[u]?.forEach(v => {
+        if (!visited.has(v)) dfs(v);
+      });
+    }
+    for (let i = 1; i <= nodes.length; i++) {
+      if (!visited.has(i)) { compCount++; dfs(i); }
+    }
+    // count unique undirected edges
+    const edges = directed
+      ? links.length
+      : links.reduce((set, l) => {
+          const s = l.source.id || l.source;
+          const t = l.target.id || l.target;
+          const key = s < t ? `${s},${t}` : `${t},${s}`;
+          set.add(key);
+          return set;
+        }, new Set()).size;
+    const cycleCount = edges - nodes.length + compCount;
+    return { components: compCount, cycles: cycleCount };
+  }, [nodes, links, directed]);
+
+  const handleChange = (field, value) => {
+    setAnswers(prev => ({ ...prev, [field]: value }));
+    setScore(null);
+  };
+
+  const handleSubmitTest = e => {
+    e.preventDefault();
+    let pts = 0;
+    if (parseInt(answers.components) === correctComponents) pts++;
+    if (parseInt(answers.cycles) === correctCycles) pts++;
+    if ((answers.directed === 'true') === directed) pts++;
+    setScore(`${pts} / 3`);
+  };
+
   return (
     <div className="flex flex-col md:flex-row h-full p-3 space-y-3 md:space-y-0 md:space-x-3">
       {/* Left panel*/}
@@ -217,12 +276,7 @@ export default function Sandbox() {
       </div>
       {/* Right panel Mini Test */}
       <div className="md:w-2/5 border-t md:border-t-0 md:border-l border-gray-200 pt-4 md:pt-0">
-        <h2 className="text-xl font-semibold mb-4">Mini Test</h2>
-        <div className="space-y-4 text-sm">
-          <div><p className="font-medium">1. Câte componente conexe?</p><input type="number" className="mt-1 w-full p-1 border rounded text-sm" /></div>
-          <div><p className="font-medium">2. Câte cicluri?</p><input type="number" className="mt-1 w-full p-1 border rounded text-sm" /></div>
-          <div><p className="font-medium">3. Graf orientat?</p><select className="mt-1 w-full p-1 border rounded text-sm"><option value="true">Da</option><option value="false">Nu</option></select></div>
-        </div>
+        <MiniTest nodes={nodes} links={links} directed={directed} />
       </div>
     </div>
   );
