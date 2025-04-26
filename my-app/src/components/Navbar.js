@@ -115,8 +115,9 @@ export default function Navbar() {
           </button>
           {lessonsOpen && (
             <div className="pl-4 space-y-1">
-              <Link to="/lectii/1" className={`${base} block text-dark-blue`}>Lecția 1</Link>
-              <Link to="/lectii/2" className={`${base} block text-dark-blue`}>Lecția 2</Link>
+              <Link to="/neorientate" className={`${base} block text-dark-blue`}>Grafuri Neorientate</Link>
+              <Link to="/orientate" className={`${base} block text-dark-blue`}>Grafuri Orientate</Link>
+              <Link to="/arbori" className={`${base} block text-dark-blue`}>Arbori</Link>
             </div>
           )}
           <button onClick={() => setTestsOpen(!testsOpen)} className={`${base} flex items-center w-full text-dark-blue`}>
@@ -124,8 +125,9 @@ export default function Navbar() {
           </button>
           {testsOpen && (
             <div className="pl-4 space-y-1">
-              <Link to="/teste/1" className={`${base} block text-dark-blue`}>Test 1</Link>
-              <Link to="/teste/2" className={`${base} block text-dark-blue`}>Test 2</Link>
+              <Link to="/testNeorientate" className={`${base} block text-dark-blue`}>Grafuri Neorientate</Link>
+              <Link to="/testOrientate" className={`${base} block text-dark-blue`}>Grafuri Orientate</Link>
+              <Link to="/testArbori" className={`${base} block text-dark-blue`}>Arbori</Link>
             </div>
           )}
           <Link to="/feedback" className={`${base} block text-dark-blue`}>Feedback</Link>
