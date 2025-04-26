@@ -19,6 +19,7 @@ import {
   generateParentVector
 } from './sandbox/GraphRepresentation';
 import MiniTest from './sandbox/Minitest';
+//pentru vercel
 
 export default function Sandbox() {
   const graphRef = useRef();
