@@ -1,5 +1,5 @@
 // src/components/Sandbox.js
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import * as d3 from 'd3';
 import {
   generateDirected,
@@ -7,9 +7,12 @@ import {
   generateFreeTree,
   generateRootedTree,
   addNode,
-  removeLastNode
+  removeLastNode,
+  generateCompleteGraph,
+  generateHamiltonianGraph,
+  generateEulerianGraph,
+  generateTournamentGraph
 } from './sandbox/Logic';
-import { drawGraph } from './sandbox/GraphView';
 import {
   generateAdjacencyMatrix,
   generateAdjList,
@@ -18,8 +21,8 @@ import {
   generatePathMatrix,
   generateParentVector
 } from './sandbox/GraphRepresentation';
+import { drawGraph } from './sandbox/GraphView';
 import MiniTest from './sandbox/Minitest';
-//pentru vercel
 
 export default function Sandbox() {
   const graphRef = useRef();
@@ -31,11 +34,7 @@ export default function Sandbox() {
   const [layoutMode, setLayoutMode] = useState('matrix');
   const [matrix, setMatrix] = useState([]);
 
-  // Mini-test state
-  const [answers, setAnswers] = useState({ components: '', cycles: '', directed: directed.toString() });
-  const [score, setScore] = useState(null);
-
-  // Initialize empty graph
+  // Initialize graph
   useEffect(() => {
     const { nodes: ns, links: ls } = generateDirected(5);
     updateGraph(ns, ls, false, true);
@@ -47,21 +46,8 @@ export default function Sandbox() {
     setDirected(dirMode);
     setIsTree(treeMode);
     setMatrix(generateAdjacencyMatrix(ns.length, ls));
-    drawCurrentGraph(ns, ls, treeMode, dirMode);
-    const modes = getModes(treeMode, dirMode);
-    setLayoutMode(modes[0].value);
-    // reset answers
-    setAnswers({ components: '', cycles: '', directed: dirMode.toString() });
-    setScore(null);
-  }
-
-  function drawCurrentGraph(ns, ls, treeMode, dirMode) {
-    const svg = d3.select(graphRef.current);
-    svg.selectAll('*').remove();
-    // reuse existing drawGraph logic:
-    import('./sandbox/GraphView').then(({ drawGraph }) => {
-      drawGraph(graphRef.current, ns, ls, treeMode, dirMode);
-    });
+    drawGraph(graphRef.current, ns, ls, treeMode, dirMode);
+    setLayoutMode(getModes(treeMode, dirMode)[0].value);
   }
 
   function getModes(treeMode, dirMode) {
@@ -71,16 +57,15 @@ export default function Sandbox() {
       { value: 'adjList', label: 'Listele Vecinilor' },
       { value: 'edgeList', label: 'Vectorul Muchie' }
     ];
-    if (dirMode) {
-      return base.concat([
-        { value: 'incidence', label: 'Matricea de Incidență' },
-        { value: 'path', label: 'Matricea Drumurilor' }
-      ]);
-    }
-    return base;
+    return dirMode
+      ? base.concat([
+          { value: 'incidence', label: 'Matricea de Incidență' },
+          { value: 'path', label: 'Matricea Drumurilor' }
+        ])
+      : base;
   }
 
-  // Handlers
+  // Core graph handlers
   const handleGenerateUndirected = () => {
     const { nodes: ns, links: ls } = generateUndirected(Math.min(Math.floor(Math.random() * 10) + 5, 10));
     updateGraph(ns, ls, false, false);
@@ -97,6 +82,23 @@ export default function Sandbox() {
     const { nodes: ns, links: ls } = generateRootedTree(Math.min(Math.floor(Math.random() * 10) + 5, 10));
     updateGraph(ns, ls, true, true);
   };
+  const handleGenerateCompleteGraph = () => {
+    const { nodes: ns, links: ls } = generateCompleteGraph(nodes.length, directed);
+    updateGraph(ns, ls, false, directed);
+  };
+  const handleGenerateHamiltonianGraph = () => {
+    const { nodes: ns, links: ls } = generateHamiltonianGraph(nodes.length, directed);
+    updateGraph(ns, ls, false, directed);
+  };
+  const handleGenerateEulerianGraph = () => {
+    const { nodes: ns, links: ls } = generateEulerianGraph(nodes.length, directed);
+    updateGraph(ns, ls, false, directed);
+  };
+  const handleGenerateTournamentGraph = () => {
+    const { nodes: ns, links: ls } = generateTournamentGraph(nodes.length);
+    updateGraph(ns, ls, false, true);
+  };
+
   const handleAddNode = () => {
     const { nodes: ns, links: ls } = addNode(nodes, links, directed, isTree);
     updateGraph(ns, ls, isTree, directed);
@@ -163,49 +165,6 @@ export default function Sandbox() {
   const parentVector = isTree && directed ? generateParentVector(nodes.length, links) : null;
   const modes = getModes(isTree, directed);
 
-  // MINI-TEST logic
-  const { components: correctComponents, cycles: correctCycles } = useMemo(() => {
-    // build undirected list for components
-    const undirected = generateAdjList(nodes.length, links, false);
-    const visited = new Set();
-    let compCount = 0;
-    function dfs(u) {
-      visited.add(u);
-      undirected[u]?.forEach(v => {
-        if (!visited.has(v)) dfs(v);
-      });
-    }
-    for (let i = 1; i <= nodes.length; i++) {
-      if (!visited.has(i)) { compCount++; dfs(i); }
-    }
-    // count unique undirected edges
-    const edges = directed
-      ? links.length
-      : links.reduce((set, l) => {
-          const s = l.source.id || l.source;
-          const t = l.target.id || l.target;
-          const key = s < t ? `${s},${t}` : `${t},${s}`;
-          set.add(key);
-          return set;
-        }, new Set()).size;
-    const cycleCount = edges - nodes.length + compCount;
-    return { components: compCount, cycles: cycleCount };
-  }, [nodes, links, directed]);
-
-  const handleChange = (field, value) => {
-    setAnswers(prev => ({ ...prev, [field]: value }));
-    setScore(null);
-  };
-
-  const handleSubmitTest = e => {
-    e.preventDefault();
-    let pts = 0;
-    if (parseInt(answers.components) === correctComponents) pts++;
-    if (parseInt(answers.cycles) === correctCycles) pts++;
-    if ((answers.directed === 'true') === directed) pts++;
-    setScore(`${pts} / 3`);
-  };
-
   return (
     <div className="flex flex-col md:flex-row h-full p-3 space-y-3 md:space-y-0 md:space-x-3">
       {/* Left panel*/}
@@ -218,6 +177,10 @@ export default function Sandbox() {
             <button onClick={handleGenerateDirected} className="px-2 py-1 bg-blue text-white rounded">Graf Orientat</button>
             <button onClick={handleGenerateFreeTree} className="px-2 py-1 bg-blue text-white rounded">Arbore Liber</button>
             <button onClick={handleGenerateRootedTree} className="px-2 py-1 bg-blue text-white rounded">Arbore cu Rădăcină</button>
+            <button onClick={handleGenerateCompleteGraph} className="px-2 py-1 bg-blue text-white rounded">Graf Complet</button>
+            <button onClick={handleGenerateHamiltonianGraph} className="px-2 py-1 bg-blue text-white rounded">Graf Hamiltonian</button>
+            <button onClick={handleGenerateEulerianGraph} className="px-2 py-1 bg-blue text-white rounded">Graf Eulerian</button>
+            <button onClick={handleGenerateTournamentGraph} className="px-2 py-1 bg-blue text-white rounded">Graf Turneu</button>
             <button onClick={handleAddNode} className="px-2 py-1 bg-green-500 text-white rounded">+ Nod</button>
             <button onClick={handleRemoveLastNode} className="px-2 py-1 bg-red-500 text-white rounded">- Nod</button>
           </div>

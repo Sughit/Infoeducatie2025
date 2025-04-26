@@ -1,5 +1,60 @@
 // src/utils/Logic.js
 
+export function generateCompleteGraph(numNodes, directed = true) {
+  const nodes = Array.from({ length: numNodes }, (_, i) => ({ id: i + 1 }));
+  const links = [];
+  if (directed) {
+    for (let i = 1; i <= numNodes; i++) {
+      for (let j = 1; j <= numNodes; j++) {
+        if (i !== j) links.push({ source: i, target: j });
+      }
+    }
+  } else {
+    for (let i = 1; i <= numNodes; i++) {
+      for (let j = i + 1; j <= numNodes; j++) {
+        links.push({ source: i, target: j });
+        links.push({ source: j, target: i });
+      }
+    }
+  }
+  return { nodes, links };
+}
+
+function generateCycleGraph(numNodes, directed = true) {
+  const nodes = Array.from({ length: numNodes }, (_, i) => ({ id: i + 1 }));
+  const links = [];
+  for (let i = 1; i < numNodes; i++) {
+    links.push({ source: i, target: i + 1 });
+    if (!directed) links.push({ source: i + 1, target: i });
+  }
+  // close cycle
+  links.push({ source: numNodes, target: 1 });
+  if (!directed) links.push({ source: 1, target: numNodes });
+  return { nodes, links };
+}
+
+export function generateHamiltonianGraph(numNodes, directed = true) {
+  // A simple cycle is Hamiltonian
+  return generateCycleGraph(numNodes, directed);
+}
+
+export function generateEulerianGraph(numNodes, directed = true) {
+  // A cycle is also Eulerian (all vertices even degree or balanced in/out)
+  return generateCycleGraph(numNodes, directed);
+}
+
+export function generateTournamentGraph(numNodes) {
+  const nodes = Array.from({ length: numNodes }, (_, i) => ({ id: i + 1 }));
+  const links = [];
+  for (let i = 1; i <= numNodes; i++) {
+    for (let j = i + 1; j <= numNodes; j++) {
+      if (Math.random() < 0.5) links.push({ source: i, target: j });
+      else links.push({ source: j, target: i });
+    }
+  }
+  return { nodes, links };
+}
+
 /**
  * Generates a random directed graph.
  * @param {number} numNodes
