@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 
 /**
@@ -9,6 +9,19 @@ import PropTypes from 'prop-types';
  * - directed: boolean flag
  */
 export default function MiniTest({ nodes, links, directed }) {
+  // Helper to build undirected adjacency list without duplicates
+  const buildAdj = useCallback(() => {
+    const adj = {};
+    for (let i = 1; i <= nodes.length; i++) adj[i] = [];
+    links.forEach(l => {
+      const s = l.source.id || l.source;
+      const t = l.target.id || l.target;
+      if (!adj[s].includes(t)) adj[s].push(t);
+      if (!adj[t].includes(s)) adj[t].push(s);
+    });
+    return adj;
+  }, [nodes, links]);
+
   // Build question pool based on graph type
   const pool = useMemo(() => {
     const questions = [];
@@ -17,14 +30,7 @@ export default function MiniTest({ nodes, links, directed }) {
       key: 'components',
       text: 'Câte componente conexe?',
       answer: () => {
-        const adj = {};
-        for (let i = 1; i <= nodes.length; i++) adj[i] = [];
-        links.forEach(l => {
-          const s = l.source.id || l.source;
-          const t = l.target.id || l.target;
-          adj[s].push(t);
-          adj[t].push(s);
-        });
+        const adj = buildAdj();
         const visited = new Set();
         let count = 0;
         function dfs(u) {
@@ -38,7 +44,7 @@ export default function MiniTest({ nodes, links, directed }) {
         return count;
       }
     });
-    // Common: cycles (cyclomatic number)
+    // Common: cycles
     questions.push({
       key: 'cycles',
       text: 'Câte cicluri?',
@@ -50,73 +56,49 @@ export default function MiniTest({ nodes, links, directed }) {
           const key = s < t ? `${s},${t}` : `${t},${s}`;
           edgeSet.add(key);
         });
-        const comps = questions.find(q => q.key==='components').answer();
-        return edgeSet.size - nodes.length + comps;
+        const compsCount = questions.find(q => q.key === 'components').answer();
+        return edgeSet.size - nodes.length + compsCount;
       }
     });
-    // Conditional degree questions
+    // Directed vs undirected
     if (directed) {
-      // Out-degree
       questions.push({
         key: 'maxOutDegree',
         text: 'Care este gradul extern maxim al unui nod?',
         answer: () => {
           const outDeg = {};
           for (let i = 1; i <= nodes.length; i++) outDeg[i] = 0;
-          links.forEach(l => {
-            const s = l.source.id || l.source;
-            outDeg[s]++;
-          });
+          links.forEach(l => outDeg[l.source.id || l.source]++);
           return Math.max(...Object.values(outDeg));
         }
       });
-      // In-degree
       questions.push({
         key: 'maxInDegree',
         text: 'Care este gradul intern maxim al unui nod?',
         answer: () => {
           const inDeg = {};
           for (let i = 1; i <= nodes.length; i++) inDeg[i] = 0;
-          links.forEach(l => {
-            const t = l.target.id || l.target;
-            inDeg[t]++;
-          });
+          links.forEach(l => inDeg[l.target.id || l.target]++);
           return Math.max(...Object.values(inDeg));
         }
       });
     } else {
-      // degree for undirected
       questions.push({
         key: 'maxDegree',
         text: 'Care este gradul maxim al unui nod?',
         answer: () => {
-          const deg = {};
-          for (let i = 1; i <= nodes.length; i++) deg[i] = 0;
-          links.forEach(l => {
-            const s = l.source.id || l.source;
-            const t = l.target.id || l.target;
-            deg[s]++;
-            deg[t]++;
-          });
-          return Math.max(...Object.values(deg));
+          const adj = buildAdj();
+          return Math.max(...Object.values(adj).map(neighbors => neighbors.length));
         }
       });
     }
-    // Common: node count
-    questions.push({
-      key: 'nodes',
-      text: 'Câte noduri sunt în graf?',
-      answer: () => nodes.length
-    });
-    // Common: edge count
+    // Common: counts
+    questions.push({ key: 'nodes', text: 'Câte noduri sunt în graf?', answer: () => nodes.length });
     questions.push({
       key: 'edges',
-      text: directed
-        ? 'Câte muchii orientate există?'
-        : 'Câte muchii (considerate ca unice) există?',
+      text: directed ? 'Câte muchii orientate există?' : 'Câte muchii unice există?',
       answer: () => {
         if (directed) return links.length;
-        // unique undirected
         const setU = new Set();
         links.forEach(l => {
           const s = l.source.id || l.source;
@@ -127,35 +109,79 @@ export default function MiniTest({ nodes, links, directed }) {
         return setU.size;
       }
     });
+    // Free trees: children & leaves if root
+    if (!directed) {
+      const adj = buildAdj();
+      const randomRoot = nodes[Math.floor(Math.random() * nodes.length)].id;
+      const children = adj[randomRoot] || [];
+      if (children.length > 0) {
+        questions.push({
+          key: `childrenOf${randomRoot}`,
+          text: `Dacă nodul ${randomRoot} ar fi rădăcina, care ar fi fii lui?`,
+          answer: () => children.slice()
+        });
+      }
+      const leaves = Object.entries(adj)
+        .filter(([node, nbrs]) => Number(node) !== randomRoot && nbrs.length === 1)
+        .map(([node]) => Number(node));
+      if (leaves.length > 0) {
+        questions.push({
+          key: `leavesIfRoot${randomRoot}`,
+          text: `Dacă nodul ${randomRoot} ar fi rădăcina, care ar fi frunzele?`,
+          answer: () => leaves.slice()
+        });
+      }
+    }
     return questions;
-  }, [nodes, links, directed]);
+  }, [nodes, links, directed, buildAdj]);
 
-  // Random subset of 5 questions
-  const questions = useMemo(() => {
-    const shuffled = [...pool].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, 5);
-  }, [pool]);
+  // Pick 5 random questions
+  const questions = useMemo(
+    () => [...pool].sort(() => Math.random() - 0.5).slice(0, 5),
+    [pool]
+  );
 
   const [answersState, setAnswersState] = useState({});
   const [score, setScore] = useState(null);
+  const [wrong, setWrong] = useState([]);
 
-  const handleChange = (key, value) => {
+  const handleChange = (key, value) =>
     setAnswersState(prev => ({ ...prev, [key]: value }));
-  };
 
   const handleSubmit = e => {
     e.preventDefault();
     let pts = 0;
+    const incorrect = [];
     questions.forEach(q => {
-      const user = (answersState[q.key]||'').toString().trim().toLowerCase();
-      const correct = q.answer().toString().toLowerCase();
-      if (user === correct) pts++;
+      const userInput = (answersState[q.key] || '').trim();
+      const correctVal = q.answer();
+      const correctStr = Array.isArray(correctVal)
+        ? correctVal.slice().sort((a,b) => a-b).join(',')
+        : correctVal.toString();
+      let isCorrect = false;
+      if (Array.isArray(correctVal)) {
+        const userArr = userInput
+          ? userInput.split(',').map(s => Number(s.trim()))
+          : [];
+        const sortedUser = userArr.filter(n => !isNaN(n)).sort((a,b) => a-b);
+        isCorrect = JSON.stringify(sortedUser) ===
+          JSON.stringify(correctVal.slice().sort((a,b) => a-b));
+      } else {
+        isCorrect = userInput.toLowerCase() === correctStr.toLowerCase();
+      }
+      if (isCorrect) pts++;
+      else incorrect.push({ text: q.text, correct: correctStr });
     });
     setScore(`${pts} / ${questions.length}`);
+    setWrong(incorrect);
   };
 
-  // Reset when graph changes
-  useEffect(() => setScore(null), [nodes, links, directed]);
+  // Reset when graph or questions change
+  useEffect(() => {
+    setScore(null);
+    setWrong([]);
+    setAnswersState({}); // clear previous answers
+  }, [nodes, links, directed, pool]);
 
   return (
     <div className="p-2">
@@ -166,7 +192,7 @@ export default function MiniTest({ nodes, links, directed }) {
             <label className="font-medium block mb-1">{q.text}</label>
             <input
               type="text"
-              value={answersState[q.key]||''}
+              value={answersState[q.key] || ''}
               onChange={e => handleChange(q.key, e.target.value)}
               className="mt-1 w-full p-2 border rounded text-sm"
             />
@@ -178,8 +204,24 @@ export default function MiniTest({ nodes, links, directed }) {
         >
           Verifică
         </button>
-        {score && <p className="mt-2 font-medium">Scor: {score}</p>}
       </form>
+      {score && (
+        <div className="mt-4">
+          <p className="font-medium">Scor: {score}</p>
+          {wrong.length > 0 && (
+            <div className="mt-2">
+              <p className="font-medium">Ai greșit la:</p>
+              <ul className="list-disc list-inside">
+                {wrong.map((w, i) => (
+                  <li key={i}>
+                    {w.text} - Răspuns corect: <strong>{w.correct}</strong>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -28,7 +28,6 @@ export default function Navbar() {
 
   useEffect(() => {
     function outside(e) {
-      // 1) Dacă nu suntem în meniul mobile, închide lecțiile/testele la click în afara desktop-dropdown
       if (!mobileOpen) {
         if (lessonsRef.current && !lessonsRef.current.contains(e.target)) {
           setLessonsOpen(false)
@@ -38,7 +37,6 @@ export default function Navbar() {
         }
       }
   
-      // 2) Dacă suntem în meniul mobile, închide tot când dai click în afara întregului mobile menu
       if (
         mobileOpen &&
         mobileRef.current &&
