@@ -191,7 +191,7 @@ export default function Sandbox() {
         </div>
         {/* Representation selector */}
         <div className="flex flex-wrap items-center gap-2">
-          <button onClick={handleRefresh} className="px-2 py-1 bg-indigo-600 text-white rounded text-sm">Reîmprospătează</button>
+          <button onClick={handleRefresh} className="px-2 py-1 bg-blue text-white rounded text-sm">Reîmprospătează</button>
           <select value={layoutMode} onChange={e => setLayoutMode(e.target.value)} className="px-2 py-1 border rounded text-sm flex-grow">
             {modes.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
           </select>
