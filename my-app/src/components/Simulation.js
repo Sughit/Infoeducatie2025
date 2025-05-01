@@ -99,100 +99,13 @@ export default function Simulation() {
     setCurrentStep(0);
   }, [nodes, links, algorithm, startNode, weightMap]);
 
-  // Render graph
-  useEffect(() => renderGraph(), [nodes, links, currentStep]);
-  function renderGraph() {
-    const svg = d3.select(svgRef.current);
-    svg.selectAll('*').remove();
-    if (!nodes.length) return;
-    const { width, height } = containerRef.current.getBoundingClientRect();
-    const g = svg.append('g');
-    const active = steps[currentStep]?.activeEdges || [];
-
-    // Draw edges
-    g.selectAll('line')
-      .data(links)
-      .enter().append('line')
-      .attr('x1', d => clamp(getNodeX(d.source), margin, width - margin))
-      .attr('y1', d => clamp(getNodeY(d.source), margin, height - margin))
-      .attr('x2', d => clamp(getNodeX(d.target), margin, width - margin))
-      .attr('y2', d => clamp(getNodeY(d.target), margin, height - margin))
-      .attr('stroke', d => getEdgeColor(d, active))
-      .attr('stroke-width', d => getEdgeWidth(d, active))
-      .lower();
-
-    // Define drag behavior using pointer for correct mobile offsets
-    const dragBehavior = d3.drag()
-      .subject((evt, node) => ({ x: node.x, y: node.y }))
-      .on('start', evt => evt.sourceEvent.stopPropagation())
-      .on('drag', (evt, node) => {
-        const { width, height } = containerRef.current.getBoundingClientRect();
-        const [x, y] = d3.pointer(evt, containerRef.current);
-        node.x = clamp(x, margin, width - margin);
-        node.y = clamp(y, margin, height - margin);
-        renderGraph();
-      });
-
-    // Draw nodes
-    g.selectAll('circle')
-      .data(nodes)
-      .enter().append('circle')
-      .attr('cx', d => d.x)
-      .attr('cy', d => d.y)
-      .attr('r', 12)
-      .attr('fill', d => getNodeColor(d))
-      .call(dragBehavior);
-
-    // Draw labels
-    g.selectAll('text')
-      .data(nodes)
-      .enter().append('text')
-      .attr('x', d => d.x)
-      .attr('y', d => d.y - 16)
-      .attr('text-anchor', 'middle')
-      .attr('font-size', '10px')
-      .text(d => d.id);
-  }
-
-  // Helper getters
-  function getNodeX(source) {
-    const node = typeof source === 'object' ? source : findNode(source);
-    return node.x;
-  }
-  function getNodeY(source) {
-    const node = typeof source === 'object' ? source : findNode(source);
-    return node.y;
-  }
-  function getEdgeColor(d, active) {
-    const key = edgeKey(d);
-    return takenEdges.some(e => e.key === key) || isEdgeActive(d, active) ? 'orange' : '#999';
-  }
-  function getEdgeWidth(d, active) {
-    const key = edgeKey(d);
-    return isEdgeActive(d, active) || takenEdges.some(e => e.key === key) ? 4 : 2;
-  }
-  function getNodeColor(d) {
-    if (['DFS','BFS'].includes(algorithm) && (d.id === startNode || steps[currentStep]?.visited?.includes(d.id))) {
-      return 'orange';
-    }
-    if (['Kruskal','Prim'].includes(algorithm) && takenEdges.some(e => e.u === d.id || e.v === d.id)) {
-      return 'orange';
-    }
-    return '#007bff';
-  }
-  function edgeKey(d) {
-    const u = typeof d.source === 'object' ? d.source.id : d.source;
-    const v = typeof d.target === 'object' ? d.target.id : d.target;
-    return `${Math.min(u,v)}-${Math.max(u,v)}`;
-  }
-
-  // Compute takenEdges based on steps
+  // Prepare taken edges for MST
   const kruskalTaken = [];
   if (algorithm === 'Kruskal') {
     steps.slice(0, currentStep + 1).forEach(s => s.activeEdges?.forEach(([u, v]) => {
       const a = Math.min(u, v), b = Math.max(u, v);
       const key = `${a}-${b}`;
-      if (!kruskalTaken.find(e => e.u === a && e.v === b)) kruskalTaken.push({ u: a, v: b, key });
+      if (!kruskalTaken.find(e => e.u === a && e.v === b)) kruskalTaken.push({ u: a, v: b, w: weightMap[key] });
     }));
   }
   const primTaken = [];
@@ -200,18 +113,59 @@ export default function Simulation() {
     steps.slice(0, currentStep + 1).forEach(s => s.activeEdges?.forEach(([u, v]) => {
       const a = Math.min(u, v), b = Math.max(u, v);
       const key = `${a}-${b}`;
-      if (!primTaken.find(e => e.u === a && e.v === b)) primTaken.push({ u: a, v: b, key });
+      if (!primTaken.find(e => e.u === a && e.v === b)) primTaken.push({ u: a, v: b, w: weightMap[key] });
     }));
   }
-  const takenEdges = algorithm === 'Kruskal' ? kruskalTaken : primTaken;
-
-  // Compute remaining edges for UI
+  const takenEdges = algorithm === 'Kruskal' ? kruskalTaken :
+                     algorithm === 'Prim'    ? primTaken     : [];
   const kruskalRemaining = algorithm === 'Kruskal'
     ? sortedEdges.filter(e => !kruskalTaken.find(t => t.u === e.u && t.v === e.v))
     : [];
   const primRemaining = algorithm === 'Prim'
     ? sortedEdges.filter(e => !primTaken.find(t => t.u === e.u && t.v === e.v))
     : [];
+
+  // Render graph
+  useEffect(() => renderGraph(), [nodes, links, currentStep]);
+  function renderGraph() {
+    const svg = d3.select(svgRef.current); svg.selectAll('*').remove();
+    if (!nodes.length) return;
+    const { width, height } = containerRef.current.getBoundingClientRect();
+    const g = svg.append('g');
+    const active = steps[currentStep]?.activeEdges || [];
+
+    g.selectAll('line').data(links).enter().append('line')
+      .attr('x1', d => clamp(findNode(d.source).x, margin, width - margin))
+      .attr('y1', d => clamp(findNode(d.source).y, margin, height - margin))
+      .attr('x2', d => clamp(findNode(d.target).x, margin, width - margin))
+      .attr('y2', d => clamp(findNode(d.target).y, margin, height - margin))
+      .attr('stroke', d => {
+        const su = typeof d.source === 'object' ? d.source.id : d.source;
+        const sv = typeof d.target === 'object' ? d.target.id : d.target;
+        const key = `${Math.min(su, sv)}-${Math.max(su, sv)}`;
+        if (takenEdges.find(e => `${e.u}-${e.v}` === key)) return 'orange';
+        if (isEdgeActive(d, active)) return 'orange';
+        return '#999';
+      })
+      .attr('stroke-width', d => isEdgeActive(d, active) || takenEdges.some(e => `${e.u}-${e.v}` === `${Math.min(d.source,d.target)}-${Math.max(d.source,d.target)}`) ? 4 : 2)
+      .lower();
+
+    g.selectAll('circle').data(nodes).enter().append('circle')
+      .attr('cx', d => d.x).attr('cy', d => d.y).attr('r', 12)
+      .attr('fill', d => {
+        if (['DFS','BFS'].includes(algorithm) && (d.id === startNode || isNodeVisited(d.id))) return 'orange';
+        if ((algorithm === 'Kruskal' || algorithm === 'Prim') && takenEdges.some(e => e.u === d.id || e.v === d.id)) return 'orange';
+        return '#007bff';
+      })
+      .call(d3.drag().on('drag', (event, d) => {
+        const [x, y] = d3.pointer(event, svgRef.current); d.x = clamp(x, margin, width - margin); d.y = clamp(y, margin, height - margin); renderGraph();
+      }));
+
+    g.selectAll('text').data(nodes).enter().append('text')
+      .attr('x', d => d.x).attr('y', d => d.y - 16)
+      .attr('text-anchor', 'middle').attr('font-size', '10px')
+      .text(d => d.id);
+  }
 
   // Traversal data
   const visitedList = ['DFS','BFS'].includes(algorithm) ? (steps[currentStep]?.visited || []) : [];
@@ -239,7 +193,6 @@ export default function Simulation() {
             </div>
           )}
         </div>
-        {/* Traversal UI */}
         {['DFS','BFS'].includes(algorithm) && (
           <>
             <h3 className="font-medium">Visited Nodes</h3>
@@ -252,7 +205,6 @@ export default function Simulation() {
             <div className="mb-4 text-center p-2 bg-gray-100 rounded">{actEdge?`${actEdge[0]} - ${actEdge[1]}`:'None'}</div>
           </>
         )}
-        {/* Kruskal UI */}
         {algorithm==='Kruskal' && (
           <>
             <h3 className="font-medium">Remaining Edges</h3>
@@ -269,11 +221,10 @@ export default function Simulation() {
             </tbody></table>
             <h3 className="font-medium">Taken Edges</h3>
             <table className="mb-4 w-full table-auto border-collapse text-sm"><thead><tr className="bg-gray-100"><th className="border px-2 py-1">Edge</th><th className="border px-2 py-1">Weight</th></tr></thead><tbody>
-              {kruskalTaken.map(e=><tr key={`${e.u}-${e.v}`}><td className="border px-2 py-1">{e.u}-${e.v}</td><td className="border px-2 py-1 text-center">{e.w}</td></tr>)}
+              {kruskalTaken.map(e=><tr key={`${e.u}-${e.v}`}><td className="border px-2 py-1">{e.u}-{e.v}</td><td className="border px-2 py-1 text-center">{e.w}</td></tr>)}
             </tbody></table>
           </>
         )}
-        {/* Prim UI */}
         {algorithm==='Prim' && (
           <>
             <h3 className="font-medium">Remaining Edges</h3>
@@ -287,11 +238,10 @@ export default function Simulation() {
             </tbody></table>
             <h3 className="font-medium">Taken Edges</h3>
             <table className="mb-4 w-full table-auto border-collapse text-sm"><tbody>
-              {primTaken.map(e=><tr key={`${e.u}-${e.v}`}><td className="border px-2 py-1">{e.u}-${e.v}</td><td className="border px-2 py-1 text-center">{e.w}</td></tr>)}
+              {primTaken.map(e=><tr key={`${e.u}-${e.v}`}><td className="border px-2 py-1">{e.u}-{e.v}</td><td className="border px-2 py-1 text-center">{e.w}</td></tr>)}
             </tbody></table>
           </>
         )}
-        {/* Controls */}
         <div className="flex items-center space-x-2 mb-4">
           <button onClick={()=>setCurrentStep(s=>Math.max(0,s-1))} className="px-2 py-1 bg-blue text-white rounded">Prev</button>
           <button onClick={()=>setCurrentStep(s=>Math.min(steps.length-1,s+1))} className="px-2 py-1 bg-blue text-white rounded">Next</button>
@@ -301,6 +251,8 @@ export default function Simulation() {
     </div>
   );
 }
+
+// Utility functions below...
 
 function generateUndirected(numNodes = 7) {
   const nodes = Array.from({ length: numNodes }, (_, i) => ({ id: i + 1 }));
@@ -388,37 +340,33 @@ function simulateBFS(nodes, links, start) {
 }
 
 function simulateKruskal(nodes, links) {
-    // Kruskal's algorithm: stop after n-1 edges selected
-    const parent = {};
-    function find(u) { return parent[u] === u ? u : (parent[u] = find(parent[u])); }
-    function union(u, v) { parent[find(u)] = find(v); }
-  
-    // Prepare edges sorted by weight then by u
-    const edges = [];
-    links.forEach(e => {
-      const u = typeof e.source === 'object' ? e.source.id : e.source;
-      const v = typeof e.target === 'object' ? e.target.id : e.target;
-      if (u < v) edges.push([u, v, e.weight]);
-    });
-    edges.sort((a, b) => a[2] - b[2] || a[0] - b[0]);
-  
-    // Initialize DSU
-    nodes.forEach(n => { parent[n.id] = n.id; });
-  
-    const steps = [];
-    let count = 0;
-    for (const [u, v, w] of edges) {
-      if (count >= nodes.length - 1) break;
-      const ru = find(u), rv = find(v);
-      const added = ru !== rv;
-      steps.push({ visited: [], activeEdges: [[u, v]], added });
-      if (added) {
-        union(u, v);
-        count++;
-      }
+  const parent = {};
+  function find(u) { return parent[u] === u ? u : (parent[u] = find(parent[u])); }
+  function union(u, v) { parent[find(u)] = find(v); }
+
+  const edges = [];
+  links.forEach(e => {
+    const u = typeof e.source === 'object' ? e.source.id : e.source;
+    const v = typeof e.target === 'object' ? e.target.id : e.target;
+    if (u < v) edges.push([u, v, e.weight]);
+  });
+  edges.sort((a, b) => a[2] - b[2] || a[0] - b[0]);
+
+  nodes.forEach(n => { parent[n.id] = n.id; });
+
+  const steps = [];
+  let count = 0;
+  for (const [u, v, w] of edges) {
+    if (count >= nodes.length - 1) break;
+    const ru = find(u), rv = find(v);
+    steps.push({ visited: [], activeEdges: [[u, v]], added: ru !== rv });
+    if (ru !== rv) {
+      union(u, v);
+      count++;
     }
-    return steps;
   }
+  return steps;
+}
 
 function simulatePrim(nodes, links, start) {
   const visited = new Set([start]);
