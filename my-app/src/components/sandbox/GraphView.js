@@ -88,15 +88,24 @@ export function drawGraph(svgElement, nodes, links, isTree = false, directed = t
       label.attr('x', d => d.x).attr('y', d => d.y);
     });
   } else {
-    const stratify = d3.stratify().id(d => d.id).parentId(d => d.parentId);
+    // Build hierarchy data for rooted tree
+    const stratify = d3.stratify()
+      .id(d => d.id)
+      .parentId(d => d.parentId);
+
     const data = nodes.map(n => {
       const parentLink = links.find(l => l.target === n.id);
-      return { id: n.id.toString(), parentId: n.id === 1 ? null : (parentLink ? parentLink.source.toString() : null) };
+      return {
+        id: n.id.toString(),
+        parentId: parentLink ? parentLink.source.toString() : null
+      };
     });
+
     const root = stratify(data);
     const treeLayout = d3.tree().size([width, height]);
     treeLayout(root);
 
+    // Draw links
     content.selectAll('path.link')
       .data(root.links())
       .enter().append('path')
@@ -106,15 +115,17 @@ export function drawGraph(svgElement, nodes, links, isTree = false, directed = t
       .attr('stroke-width', 2)
       .attr('d', d3.linkVertical().x(d => d.x).y(d => d.y));
 
+    // Draw nodes, highlight only the root
     content.selectAll('circle.node')
       .data(root.descendants())
       .enter().append('circle')
       .attr('class', 'node')
-      .attr('r', d => (d.data.id === '1' ? 12 : 8))
-      .attr('fill', d => (d.data.id === '1' ? 'orange' : '#007bff'))
+      .attr('r', d => (d.parent ? 8 : 12))
+      .attr('fill', d => (d.parent ? '#007bff' : 'orange'))
       .attr('cx', d => d.x)
       .attr('cy', d => d.y);
 
+    // Labels, with extra offset for root
     content.selectAll('text.label')
       .data(root.descendants())
       .enter().append('text')
@@ -123,6 +134,6 @@ export function drawGraph(svgElement, nodes, links, isTree = false, directed = t
       .attr('font-size', '10px')
       .attr('text-anchor', 'middle')
       .attr('x', d => d.x)
-      .attr('y', d => d.y - (d.data.id === '1' ? 16 : 12));
+      .attr('y', d => d.y - (d.parent ? 12 : 16));
   }
 }
