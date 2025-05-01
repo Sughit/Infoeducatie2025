@@ -182,11 +182,11 @@ export default function Simulation() {
           {algorithms.map(algo=>(
             <button key={algo} onClick={()=>setAlgorithm(algo)} className={`px-3 py-1 rounded ${algorithm===algo?'bg-highlight text-white':'bg-gray-200'}`}>{algo}</button>
           ))}
-          <input type="number" min="1" placeholder="#nodes" value={nodeCount} onChange={e=>setNodeCount(e.target.value)} className="w-20 border rounded px-2 py-1" />
+          <input type="number" min="1" placeholder="nr noduri" value={nodeCount} onChange={e=>setNodeCount(e.target.value)} className="w-20 border rounded px-2 py-1" />
           <button onClick={()=>generateGraph(parseInt(nodeCount)||null)} className="px-3 py-1 bg-green-500 text-white rounded">Regenerate</button>
           {['DFS','BFS'].includes(algorithm) && (
             <div className="flex items-center space-x-2">
-              <label>Start Node:</label>
+              <label>Nodul de start:</label>
               <select value={startNode||''} onChange={e=>setStartNode(Number(e.target.value))} className="border rounded px-2 py-1">
                 {nodes.map(n=> <option key={n.id} value={n.id}>{n.id}</option>)}
               </select>
@@ -195,14 +195,14 @@ export default function Simulation() {
         </div>
         {['DFS','BFS'].includes(algorithm) && (
           <>
-            <h3 className="font-medium">Visited Nodes</h3>
+            <h3 className="font-medium">Noduri vizitate</h3>
             <div className="mb-4 overflow-x-auto">
               <table className="w-max table-auto border-collapse whitespace-nowrap">
                 <thead><tr>{visitedList.map((n,i)=><th key={i} className="border px-2 py-1">{n}</th>)}</tr></thead>
               </table>
             </div>
-            <h3 className="font-medium">Active Edge</h3>
-            <div className="mb-4 text-center p-2 bg-gray-100 rounded">{actEdge?`${actEdge[0]} - ${actEdge[1]}`:'None'}</div>
+            <h3 className="font-medium">Muchia Activă</h3>
+            <div className="mb-4 text-center p-2 bg-gray-100 rounded">{actEdge?`${actEdge[0]} - ${actEdge[1]}`:'-'}</div>
           </>
         )}
         {algorithm==='Kruskal' && (
@@ -243,9 +243,9 @@ export default function Simulation() {
           </>
         )}
         <div className="flex items-center space-x-2 mb-4">
-          <button onClick={()=>setCurrentStep(s=>Math.max(0,s-1))} className="px-2 py-1 bg-blue text-white rounded">Prev</button>
-          <button onClick={()=>setCurrentStep(s=>Math.min(steps.length-1,s+1))} className="px-2 py-1 bg-blue text-white rounded">Next</button>
-          <span>Step {currentStep+1}/{steps.length}</span>
+          <button onClick={()=>setCurrentStep(s=>Math.max(0,s-1))} className="px-2 py-1 bg-blue text-white rounded">Prec</button>
+          <button onClick={()=>setCurrentStep(s=>Math.min(steps.length-1,s+1))} className="px-2 py-1 bg-blue text-white rounded">Urm</button>
+          <span>Pas {currentStep+1}/{steps.length}</span>
         </div>
       </div>
     </div>

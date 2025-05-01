@@ -208,7 +208,6 @@ export default function Sandbox() {
       <div className="flex flex-col md:w-3/5 space-y-3">
         {/* Controls */}
         <div className="bg-white p-2 shadow rounded">
-          <h2 className="text-lg font-medium mb-1">Controls</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
             <button onClick={handleGenerateUndirected} className="px-2 py-1 bg-blue text-white rounded">Graf Neorientat</button>
             <button onClick={handleGenerateDirected} className="px-2 py-1 bg-blue text-white rounded">Graf Orientat</button>
