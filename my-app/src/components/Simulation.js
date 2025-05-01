@@ -125,8 +125,15 @@ export default function Simulation() {
     ? sortedEdges.filter(e => !primTaken.find(t => t.u === e.u && t.v === e.v))
     : [];
 
-  // Render graph
-  useEffect(() => renderGraph(), [nodes, links, currentStep]);
+  // Responsive D3 render
+  useEffect(() => {
+    renderGraph();
+    // Re-render on window resize for updated dimensions
+    const handleResize = () => renderGraph();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [nodes, links, currentStep]);
+
   function renderGraph() {
     const svg = d3.select(svgRef.current); svg.selectAll('*').remove();
     if (!nodes.length) return;
@@ -174,11 +181,11 @@ export default function Simulation() {
   const actEdge = ['DFS','BFS'].includes(algorithm) ? activeEdge() : null;
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
-      <div ref={containerRef} className="w-1/2 h-full border-r relative">
-        <svg ref={svgRef} className="w-full h-full absolute inset-0" />
+    <div className="flex flex-col md:flex-row h-[calc(100vh-4rem)] overflow-hidden">
+      <div ref={containerRef} className="w-full md:w-1/2 h-64 md:h-full border-b md:border-b-0 md:border-r border-gray-300 relative">
+        <svg ref={svgRef} className="w-full h-full" />
       </div>
-      <div className="w-1/2 h-full flex flex-col overflow-auto p-4">
+      <div className="w-full md:w-1/2 h-auto md:h-full flex flex-col overflow-auto p-4">
         <h2 className="text-2xl font-semibold mb-4">Simulări Algoritmi</h2>
         <div className="flex flex-wrap items-center space-x-2 mb-4">
           {algorithms.map(algo=>(
