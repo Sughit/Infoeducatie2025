@@ -121,13 +121,15 @@ export default function Simulation() {
       .attr('stroke-width', d => getEdgeWidth(d, active))
       .lower();
 
-    // Define drag behavior
+    // Define drag behavior using pointer for correct mobile offsets
     const dragBehavior = d3.drag()
-      .subject((event, d) => ({ x: d.x, y: d.y }))
-      .on('start', event => event.sourceEvent.stopPropagation())
-      .on('drag', (event, d) => {
-        d.x = clamp(event.x, margin, width - margin);
-        d.y = clamp(event.y, margin, height - margin);
+      .subject((evt, node) => ({ x: node.x, y: node.y }))
+      .on('start', evt => evt.sourceEvent.stopPropagation())
+      .on('drag', (evt, node) => {
+        const { width, height } = containerRef.current.getBoundingClientRect();
+        const [x, y] = d3.pointer(evt, containerRef.current);
+        node.x = clamp(x, margin, width - margin);
+        node.y = clamp(y, margin, height - margin);
         renderGraph();
       });
 
