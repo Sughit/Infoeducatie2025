@@ -99,13 +99,98 @@ export default function Simulation() {
     setCurrentStep(0);
   }, [nodes, links, algorithm, startNode, weightMap]);
 
-  // Prepare taken edges for MST
+  // Render graph
+  useEffect(() => renderGraph(), [nodes, links, currentStep]);
+  function renderGraph() {
+    const svg = d3.select(svgRef.current);
+    svg.selectAll('*').remove();
+    if (!nodes.length) return;
+    const { width, height } = containerRef.current.getBoundingClientRect();
+    const g = svg.append('g');
+    const active = steps[currentStep]?.activeEdges || [];
+
+    // Draw edges
+    g.selectAll('line')
+      .data(links)
+      .enter().append('line')
+      .attr('x1', d => clamp(getNodeX(d.source), margin, width - margin))
+      .attr('y1', d => clamp(getNodeY(d.source), margin, height - margin))
+      .attr('x2', d => clamp(getNodeX(d.target), margin, width - margin))
+      .attr('y2', d => clamp(getNodeY(d.target), margin, height - margin))
+      .attr('stroke', d => getEdgeColor(d, active))
+      .attr('stroke-width', d => getEdgeWidth(d, active))
+      .lower();
+
+    // Define drag behavior
+    const dragBehavior = d3.drag()
+      .subject((event, d) => ({ x: d.x, y: d.y }))
+      .on('start', event => event.sourceEvent.stopPropagation())
+      .on('drag', (event, d) => {
+        d.x = clamp(event.x, margin, width - margin);
+        d.y = clamp(event.y, margin, height - margin);
+        renderGraph();
+      });
+
+    // Draw nodes
+    g.selectAll('circle')
+      .data(nodes)
+      .enter().append('circle')
+      .attr('cx', d => d.x)
+      .attr('cy', d => d.y)
+      .attr('r', 12)
+      .attr('fill', d => getNodeColor(d))
+      .call(dragBehavior);
+
+    // Draw labels
+    g.selectAll('text')
+      .data(nodes)
+      .enter().append('text')
+      .attr('x', d => d.x)
+      .attr('y', d => d.y - 16)
+      .attr('text-anchor', 'middle')
+      .attr('font-size', '10px')
+      .text(d => d.id);
+  }
+
+  // Helper getters
+  function getNodeX(source) {
+    const node = typeof source === 'object' ? source : findNode(source);
+    return node.x;
+  }
+  function getNodeY(source) {
+    const node = typeof source === 'object' ? source : findNode(source);
+    return node.y;
+  }
+  function getEdgeColor(d, active) {
+    const key = edgeKey(d);
+    return takenEdges.some(e => e.key === key) || isEdgeActive(d, active) ? 'orange' : '#999';
+  }
+  function getEdgeWidth(d, active) {
+    const key = edgeKey(d);
+    return isEdgeActive(d, active) || takenEdges.some(e => e.key === key) ? 4 : 2;
+  }
+  function getNodeColor(d) {
+    if (['DFS','BFS'].includes(algorithm) && (d.id === startNode || steps[currentStep]?.visited?.includes(d.id))) {
+      return 'orange';
+    }
+    if (['Kruskal','Prim'].includes(algorithm) && takenEdges.some(e => e.u === d.id || e.v === d.id)) {
+      return 'orange';
+    }
+    return '#007bff';
+  }
+  function edgeKey(d) {
+    const u = typeof d.source === 'object' ? d.source.id : d.source;
+    const v = typeof d.target === 'object' ? d.target.id : d.target;
+    return `${Math.min(u,v)}-${Math.max(u,v)}`;
+  }
+
+  // Compute takenEdges based on steps
   const kruskalTaken = [];
   if (algorithm === 'Kruskal') {
     steps.slice(0, currentStep + 1).forEach(s => s.activeEdges?.forEach(([u, v]) => {
       const a = Math.min(u, v), b = Math.max(u, v);
       const key = `${a}-${b}`;
-      if (!kruskalTaken.find(e => e.u === a && e.v === b)) kruskalTaken.push({ u: a, v: b, w: weightMap[key] });
+      if (!kruskalTaken.find(e => e.u === a && e.v === b)) kruskalTaken.push({ u: a, v: b, key });
     }));
   }
   const primTaken = [];
@@ -113,11 +198,12 @@ export default function Simulation() {
     steps.slice(0, currentStep + 1).forEach(s => s.activeEdges?.forEach(([u, v]) => {
       const a = Math.min(u, v), b = Math.max(u, v);
       const key = `${a}-${b}`;
-      if (!primTaken.find(e => e.u === a && e.v === b)) primTaken.push({ u: a, v: b, w: weightMap[key] });
+      if (!primTaken.find(e => e.u === a && e.v === b)) primTaken.push({ u: a, v: b, key });
     }));
   }
-  const takenEdges = algorithm === 'Kruskal' ? kruskalTaken :
-                     algorithm === 'Prim'    ? primTaken     : [];
+  const takenEdges = algorithm === 'Kruskal' ? kruskalTaken : primTaken;
+
+  // Compute remaining edges for UI
   const kruskalRemaining = algorithm === 'Kruskal'
     ? sortedEdges.filter(e => !kruskalTaken.find(t => t.u === e.u && t.v === e.v))
     : [];
@@ -125,67 +211,16 @@ export default function Simulation() {
     ? sortedEdges.filter(e => !primTaken.find(t => t.u === e.u && t.v === e.v))
     : [];
 
-  // Responsive D3 render
-  useEffect(() => {
-    renderGraph();
-    // Re-render on window resize for updated dimensions
-    const handleResize = () => renderGraph();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [nodes, links, currentStep]);
-
-  function renderGraph() {
-    const svg = d3.select(svgRef.current); svg.selectAll('*').remove();
-    if (!nodes.length) return;
-    const { width, height } = containerRef.current.getBoundingClientRect();
-    const g = svg.append('g');
-    const active = steps[currentStep]?.activeEdges || [];
-
-    g.selectAll('line').data(links).enter().append('line')
-      .attr('x1', d => clamp(findNode(d.source).x, margin, width - margin))
-      .attr('y1', d => clamp(findNode(d.source).y, margin, height - margin))
-      .attr('x2', d => clamp(findNode(d.target).x, margin, width - margin))
-      .attr('y2', d => clamp(findNode(d.target).y, margin, height - margin))
-      .attr('stroke', d => {
-        const su = typeof d.source === 'object' ? d.source.id : d.source;
-        const sv = typeof d.target === 'object' ? d.target.id : d.target;
-        const key = `${Math.min(su, sv)}-${Math.max(su, sv)}`;
-        if (takenEdges.find(e => `${e.u}-${e.v}` === key)) return 'orange';
-        if (isEdgeActive(d, active)) return 'orange';
-        return '#999';
-      })
-      .attr('stroke-width', d => isEdgeActive(d, active) || takenEdges.some(e => `${e.u}-${e.v}` === `${Math.min(d.source,d.target)}-${Math.max(d.source,d.target)}`) ? 4 : 2)
-      .lower();
-
-    g.selectAll('circle').data(nodes).enter().append('circle')
-      .attr('cx', d => d.x).attr('cy', d => d.y).attr('r', 12)
-      .attr('fill', d => {
-        // Traversal: start node and visited nodes
-        if (['DFS','BFS'].includes(algorithm) && (d.id === startNode || isNodeVisited(d.id))) return 'orange';
-        // MST: nodes incident to taken edges
-        if ((algorithm === 'Kruskal' || algorithm === 'Prim') && takenEdges.some(e => e.u === d.id || e.v === d.id)) return 'orange';
-        return '#007bff';
-      })
-      .call(d3.drag().on('drag', (event, d) => {
-        const [x, y] = d3.pointer(event, svgRef.current); d.x = clamp(x, margin, width - margin); d.y = clamp(y, margin, height - margin); renderGraph();
-      }));
-
-    g.selectAll('text').data(nodes).enter().append('text')
-      .attr('x', d => d.x).attr('y', d => d.y - 16)
-      .attr('text-anchor', 'middle').attr('font-size', '10px')
-      .text(d => d.id);
-  }
-
   // Traversal data
   const visitedList = ['DFS','BFS'].includes(algorithm) ? (steps[currentStep]?.visited || []) : [];
   const actEdge = ['DFS','BFS'].includes(algorithm) ? activeEdge() : null;
 
   return (
-    <div className="flex flex-col md:flex-row h-[calc(100vh-4rem)] overflow-hidden">
-      <div ref={containerRef} className="w-full md:w-1/2 h-64 md:h-full border-b md:border-b-0 md:border-r border-gray-300 relative">
-        <svg ref={svgRef} className="w-full h-full" />
+    <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
+      <div ref={containerRef} className="w-1/2 h-full border-r relative">
+        <svg ref={svgRef} className="w-full h-full absolute inset-0" />
       </div>
-      <div className="w-full md:w-1/2 h-auto md:h-full flex flex-col overflow-auto p-4">
+      <div className="w-1/2 h-full flex flex-col overflow-auto p-4">
         <h2 className="text-2xl font-semibold mb-4">Simulări Algoritmi</h2>
         <div className="flex flex-wrap items-center space-x-2 mb-4">
           {algorithms.map(algo=>(
