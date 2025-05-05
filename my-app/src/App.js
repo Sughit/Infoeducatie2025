@@ -14,9 +14,7 @@ import Neorientate from './lessons/Neorientate'
 import Orientate from './lessons/Orientate'
 import Arbori from './lessons/Arbori'
 
-import TestNeorientate from './tests/TestNeorientate'
-import TestOrientate from './tests/TestOrientate'
-import TestArbori from './tests/TestArbori'
+import Tests from './components/Tests'
 
 export default function App() {
   return (
@@ -37,9 +35,7 @@ export default function App() {
             <Route path="/orientate" element={<Orientate />} />
             <Route path="/arbori" element={<Arbori />} />
 
-            <Route path="/testNeorientate" element={<TestNeorientate />} />
-            <Route path="/testOrientate" element={<TestOrientate />} />
-            <Route path="/testArbori" element={<TestArbori />} />
+            <Route path="/tests/*" element={<Tests />} />
           </Routes>
         </main>
       </div>

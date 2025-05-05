@@ -5,13 +5,12 @@ import { auth } from '../firebase'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 
 export default function Navbar() {
-  const [mobileOpen, setMobileOpen]   = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const [lessonsOpen, setLessonsOpen] = useState(false)
-  const [testsOpen,   setTestsOpen]   = useState(false)
-  const [user, setUser]               = useState(null)
+  const [user, setUser] = useState(null)
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, currentUser => {
       setUser(currentUser)
     })
     return unsubscribe
@@ -22,21 +21,14 @@ export default function Navbar() {
   }
 
   const lessonsRef = useRef(null)
-  const testsRef   = useRef(null)
-  const mobileRef  = useRef(null)
-  const toggleRef  = useRef(null)
+  const mobileRef = useRef(null)
+  const toggleRef = useRef(null)
 
   useEffect(() => {
     function outside(e) {
-      if (!mobileOpen) {
-        if (lessonsRef.current && !lessonsRef.current.contains(e.target)) {
-          setLessonsOpen(false)
-        }
-        if (testsRef.current && !testsRef.current.contains(e.target)) {
-          setTestsOpen(false)
-        }
+      if (lessonsRef.current && !lessonsRef.current.contains(e.target)) {
+        setLessonsOpen(false)
       }
-  
       if (
         mobileOpen &&
         mobileRef.current &&
@@ -46,10 +38,8 @@ export default function Navbar() {
       ) {
         setMobileOpen(false)
         setLessonsOpen(false)
-        setTestsOpen(false)
       }
     }
-  
     document.addEventListener('mousedown', outside)
     return () => document.removeEventListener('mousedown', outside)
   }, [mobileOpen])
@@ -65,7 +55,7 @@ export default function Navbar() {
           <Link to="/" className="text-2xl font-extrabold text-highlight hover:text-dark-blue">Graf.in</Link>
 
           <div className="hidden md:flex md:items-center md:space-x-6">
-            <NavLink to="/sandbox"  className={navClass}>Sandbox</NavLink>
+            <NavLink to="/sandbox" className={navClass}>Sandbox</NavLink>
             <NavLink to="/simulari" className={navClass}>Simulări</NavLink>
             <div ref={lessonsRef} className="relative">
               <button onClick={() => setLessonsOpen(!lessonsOpen)} className={`${base} flex items-center text-dark-blue hover:text-blue hover:bg-light-blue/10`}>
@@ -79,30 +69,18 @@ export default function Navbar() {
                 </div>
               )}
             </div>
-            <div ref={testsRef} className="relative">
-              <button onClick={() => setTestsOpen(!testsOpen)} className={`${base} flex items-center text-dark-blue hover:text-blue hover:bg-light-blue/10`}>
-                Teste<ChevronDown className={`ml-1 h-4 w-4 transition-transform ${testsOpen ? 'rotate-180' : ''}`} />
-              </button>
-              {testsOpen && (
-                <div className="absolute left-0 mt-2 w-44 bg-white shadow-lg rounded-lg py-2 z-10">
-                  <Link to="/testNeorientate" className={`${base} block text-dark-blue hover:text-blue hover:bg-light-blue/10`}>Grafuri Neorientate</Link>
-                  <Link to="/testOrientate" className={`${base} block text-dark-blue hover:text-blue hover:bg-light-blue/10`}>Grafuri Orientate</Link>
-                  <Link to="/testArbori" className={`${base} block text-dark-blue hover:text-blue hover:bg-light-blue/10`}>Arbori</Link>
-                </div>
-              )}
-            </div>
+            <NavLink to="/tests" className={navClass}>Teste</NavLink>
             <NavLink to="/feedback" className={navClass}>Feedback</NavLink>
           </div>
 
           <div className="hidden md:flex items-center space-x-4">
             {user ? (
               <Link to="/profile" className="flex items-center px-4 py-2 bg-blue text-white rounded-lg hover:bg-light-blue">
-                <User className="mr-2 h-5 w-5" />
-                Profil
+                <User className="mr-2 h-5 w-5" />Profil
               </Link>
             ) : (
               <>
-                <Link to="/login"  className="px-4 py-2 border-2 border-highlight text-highlight rounded-lg hover:bg-highlight hover:text-white">Conectare</Link>
+                <Link to="/login" className="px-4 py-2 border-2 border-highlight text-highlight rounded-lg hover:bg-highlight hover:text-white">Conectare</Link>
                 <Link to="/signup" className="px-4 py-2 bg-blue text-white rounded-lg hover:bg-light-blue">Înregistrare</Link>
               </>
             )}
@@ -128,24 +106,12 @@ export default function Navbar() {
               <Link to="/arbori" className={`${base} block text-dark-blue`}>Arbori</Link>
             </div>
           )}
-          <button onClick={() => setTestsOpen(!testsOpen)} className={`${base} flex items-center w-full text-dark-blue`}>
-            Teste<ChevronDown className={`ml-auto h-4 w-4 transition-transform ${testsOpen ? 'rotate-180' : ''}`} />
-          </button>
-          {testsOpen && (
-            <div className="pl-4 space-y-1">
-              <Link to="/testNeorientate" className={`${base} block text-dark-blue`}>Grafuri Neorientate</Link>
-              <Link to="/testOrientate" className={`${base} block text-dark-blue`}>Grafuri Orientate</Link>
-              <Link to="/testArbori" className={`${base} block text-dark-blue`}>Arbori</Link>
-            </div>
-          )}
+          <Link to="/tests" className={`${base} block text-dark-blue`}>Teste</Link>
           <Link to="/feedback" className={`${base} block text-dark-blue`}>Feedback</Link>
           {user ? (
-            <>
-              <Link to="/profile" className="block px-4 py-2 flex items-center bg-blue text-white rounded-lg">
-                <User className="mr-2 h-5 w-5" />
-                Profil
-              </Link>
-            </>
+            <Link to="/profile" className="block px-4 py-2 flex items-center bg-blue text-white rounded-lg">
+              <User className="mr-2 h-5 w-5" />Profil
+            </Link>
           ) : (
             <>
               <Link to="/login" className="block px-4 py-2 border-2 border-highlight text-highlight rounded-lg hover:bg-highlight hover:text-white">Conectare</Link>

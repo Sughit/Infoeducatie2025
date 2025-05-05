@@ -128,7 +128,11 @@ export default function Home() {
               ))}
             </ul>
             <Link
-              to={id === 'feedback' ? '/feedback' : `#${id}`}
+              to={id === 'sandbox' ? '/sandbox' :
+                  id === 'simulari' ? '/simulari' :
+                  id === 'teste' ? '/tests' : 
+                  id === 'feedback' ? '/feedback' : 
+                  `#${id}`}
               className="inline-block bg-highlight text-white font-medium py-3 px-8 rounded-full shadow hover:scale-105 transition-transform"
             >
               {button}
