@@ -9,6 +9,13 @@ export default function Navbar() {
   const [lessonsOpen, setLessonsOpen] = useState(false)
   const [user, setUser] = useState(null)
 
+  // Refs for click-away handling
+  const lessonsRef = useRef(null)
+  const mobileRef = useRef(null)
+  const toggleRef = useRef(null)
+  // New ref for mobile dropdown menu
+  const mobileLessonsRef = useRef(null)
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, currentUser => {
       setUser(currentUser)
@@ -16,19 +23,13 @@ export default function Navbar() {
     return unsubscribe
   }, [])
 
-  const handleSignOut = async () => {
-    await signOut(auth)
-  }
-
-  const lessonsRef = useRef(null)
-  const mobileRef = useRef(null)
-  const toggleRef = useRef(null)
-
   useEffect(() => {
     function outside(e) {
-      if (lessonsRef.current && !lessonsRef.current.contains(e.target)) {
+      // Close desktop dropdown only when mobile menu is not open
+      if (!mobileOpen && lessonsRef.current && !lessonsRef.current.contains(e.target)) {
         setLessonsOpen(false)
       }
+      // Close mobile menu (and dropdown) when clicking outside
       if (
         mobileOpen &&
         mobileRef.current &&
@@ -47,6 +48,10 @@ export default function Navbar() {
   const base = 'px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200'
   const navClass = ({ isActive }) =>
     `${base} ${isActive ? 'bg-light-blue/20 text-blue' : 'text-dark-blue hover:bg-light-blue/10 hover:text-blue'}`
+
+  const handleSignOut = async () => {
+    await signOut(auth)
+  }
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-white shadow-md">
@@ -100,7 +105,7 @@ export default function Navbar() {
             Lecții<ChevronDown className={`ml-auto h-4 w-4 transition-transform ${lessonsOpen ? 'rotate-180' : ''}`} />
           </button>
           {lessonsOpen && (
-            <div className="pl-4 space-y-1">
+            <div ref={mobileLessonsRef} className="pl-4 space-y-1">
               <Link to="/neorientate" className={`${base} block text-dark-blue`}>Grafuri Neorientate</Link>
               <Link to="/orientate" className={`${base} block text-dark-blue`}>Grafuri Orientate</Link>
               <Link to="/arbori" className={`${base} block text-dark-blue`}>Arbori</Link>
