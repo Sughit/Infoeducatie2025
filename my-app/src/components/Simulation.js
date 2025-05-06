@@ -1,390 +1,424 @@
-// src/components/Simulation.js
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import * as d3 from 'd3';
+import {
+  generateUndirected,
+  generateWeightedGraph,
+  simulateDFS,
+  simulateBFS,
+  simulateKruskal,
+  simulatePrim
+} from './SimulationAlgorithms';
+import { drawGraph } from './sandbox/GraphView';
 
-const algorithms = ['DFS', 'BFS', 'Kruskal', 'Prim'];
+const algorithms = ['DFS', 'BFS', 'Kruskal', 'Prim', 'BST'];
+const margin = 40;
 
 export default function Simulation() {
+  // Common state
   const [algorithm, setAlgorithm] = useState('DFS');
   const [nodes, setNodes] = useState([]);
   const [links, setLinks] = useState([]);
-  const [sortedEdges, setSortedEdges] = useState([]);
   const [steps, setSteps] = useState([]);
   const [currentStep, setCurrentStep] = useState(0);
-  const [startNode, setStartNode] = useState(null);
+
+  // Controls
+  const [nodeCount, setNodeCount] = useState('7');
+  const [sortedEdges, setSortedEdges] = useState([]);
   const [weightMap, setWeightMap] = useState({});
-  const [nodeCount, setNodeCount] = useState('');
+  const [startNode, setStartNode] = useState(null);
+
+  // BST state
+  const [bstTree, setBstTree] = useState(null);
+  const [bstInsertVal, setBstInsertVal] = useState('');
+  const [bstSearchVal, setBstSearchVal] = useState('');
+  const [bstSteps, setBstSteps] = useState([]);
+  const [bstCurrentStep, setBstCurrentStep] = useState(0);
+
   const svgRef = useRef();
   const containerRef = useRef();
-  const margin = 40;
 
-  // Helpers
-  const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
-  const findNode = id => {
-    const nid = typeof id === 'object' && id.id !== undefined ? id.id : id;
-    return nodes.find(n => n.id === nid) || { x: 0, y: 0 };
+  // BST helpers
+  const insertIntoBST = useCallback((node, val) => {
+    if (!node) return { id: val, left: null, right: null };
+    if (val < node.id) node.left = insertIntoBST(node.left, val);
+    else if (val > node.id) node.right = insertIntoBST(node.right, val);
+    return node;
+  }, []);
+
+  const flattenBST = useCallback(root => {
+    const n = [], l = [];
+    const traverse = node => {
+      if (!node) return;
+      n.push({ id: node.id });
+      if (node.left) { l.push({ source: node.id, target: node.left.id }); traverse(node.left); }
+      if (node.right) { l.push({ source: node.id, target: node.right.id }); traverse(node.right); }
+    };
+    traverse(root);
+    return { nodes: n, links: l };
+  }, []);
+
+  const handleBstInsert = () => {
+    const val = Number(bstInsertVal);
+    if (isNaN(val)) return;
+    const newRoot = insertIntoBST(bstTree, val);
+    setBstTree(newRoot);
+    const { nodes: n, links: l } = flattenBST(newRoot);
+    setNodes(n);
+    setLinks(l);
+    setStartNode(newRoot.id);
+    setBstInsertVal('');
+    setBstSteps([]);
+    setBstCurrentStep(0);
   };
-  const isNodeVisited = id => steps[currentStep]?.visited?.includes(id) || false;
-  const activeEdge = () => steps[currentStep]?.activeEdges?.[0] || null;
-  const isEdgeActive = (e, active) => active.some(([u, v]) => {
+
+  const handleBstSearch = () => {
+    const val = Number(bstSearchVal);
+    if (isNaN(val) || !bstTree) return;
+    const seq = [];
+    const searchNode = node => {
+      if (!node) return;
+      seq.push(node.id);
+      if (val === node.id) return;
+      if (val < node.id) searchNode(node.left);
+      else searchNode(node.right);
+    };
+    searchNode(bstTree);
+    setBstSteps(seq);
+    setBstCurrentStep(0);
+  };
+
+  // Graph helpers
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+  const findNode = id => nodes.find(n => n.id === (id.id ?? id)) || { x: 0, y: 0 };
+  const isEdgeActive = (edge, active) => active.some(([u, v]) => {
     const su = u.id ?? u, sv = v.id ?? v;
-    const es = e.source.id ?? e.source, et = e.target.id ?? e.target;
+    const es = edge.source.id ?? edge.source, et = edge.target.id ?? edge.target;
     return (su === es && sv === et) || (su === et && sv === es);
   });
 
-  // Generate graph
   const generateGraph = size => {
     let graph;
     if (['Kruskal', 'Prim'].includes(algorithm)) {
+      // — weighted graph generation & sorting —
       graph = generateWeightedGraph(size, 10);
-      // sort by weight then by u
       let edges = graph.links
         .map(l => {
           const u = typeof l.source === 'object' ? l.source.id : l.source;
           const v = typeof l.target === 'object' ? l.target.id : l.target;
           return u < v ? { u, v, w: l.weight } : null;
         })
-        .filter(e => e);
-      // remove duplicate edge entries
-      edges = edges.filter((e, i, arr) => arr.findIndex(x => x.u === e.u && x.v === e.v) === i);
-      // sort by weight then by node u
+        .filter(Boolean);
+      // dedupe + sort
+      edges = edges.filter((e, i, arr) =>
+        arr.findIndex(x => x.u === e.u && x.v === e.v) === i
+      );
       edges.sort((a, b) => a.w - b.w || a.u - b.u);
       setSortedEdges(edges);
+      // build weightMap
       const wm = {};
       edges.forEach(e => { wm[`${e.u}-${e.v}`] = e.w; });
       setWeightMap(wm);
     } else {
+      // — unweighted graph —
       graph = generateUndirected(size);
       setSortedEdges([]);
       setWeightMap({});
     }
+  
+    // extract nodes & links
     const { nodes: ns, links: ls } = graph;
-    setStartNode(ns[0]?.id || null);
+    setStartNode(ns[0]?.id ?? null);
+  
+    // — headless force-layout for initial positions —
     const { width, height } = containerRef.current.getBoundingClientRect();
     const sim = d3.forceSimulation(ns)
-      .force('link', d3.forceLink(ls).id(d => d.id).distance(algorithm === 'Prim' ? 120 : 80))
-      .force('charge', d3.forceManyBody().strength(-200))
-      .force('center', d3.forceCenter(width / 2, height / 2))
+      .force('link',    d3.forceLink(ls).id(d => d.id).distance(
+                        algorithm === 'Prim' ? 120 : 80
+                      ))
+      .force('charge',  d3.forceManyBody().strength(-200))
+      .force('center',  d3.forceCenter(width / 2, height / 2))
       .force('collide', d3.forceCollide().radius(25))
       .stop();
+  
+    // tick until “settled”
     for (let i = 0; i < 300; i++) sim.tick();
+  
+    // clamp into margins
     ns.forEach(n => {
-      n.x = clamp(n.x, margin, width - margin);
+      n.x = clamp(n.x, margin, width  - margin);
       n.y = clamp(n.y, margin, height - margin);
     });
+  
+    // update React state with positioned nodes & links
     setNodes([...ns]);
     setLinks(ls.map(l => ({ ...l })));
+  
+    // reset any traversal/MST/BST state
+    setSteps([]);
     setCurrentStep(0);
+    setBstTree(null);
+    setBstSteps([]);
+    setBstCurrentStep(0);
   };
 
-  // On algorithm change
   useEffect(() => {
-    const size = ['DFS', 'BFS'].includes(algorithm)
-      ? (parseInt(nodeCount) > 0 ? parseInt(nodeCount) : Math.floor(Math.random() * 8) + 3)
-      : (parseInt(nodeCount) > 0 ? parseInt(nodeCount) : 7);
-    generateGraph(size);
-  }, [algorithm]);
-
-  // Compute steps
-  useEffect(() => {
-    if (!nodes.length || (['DFS', 'BFS'].includes(algorithm) && startNode == null)) return;
-    let simSteps = [];
-    switch (algorithm) {
-      case 'DFS': simSteps = simulateDFS(nodes, links, startNode); break;
-      case 'BFS': simSteps = simulateBFS(nodes, links, startNode); break;
-      case 'Kruskal': simSteps = simulateKruskal(nodes, links); break;
-      case 'Prim': simSteps = simulatePrim(nodes, links, startNode); break;
+    if (algorithm !== 'BST') {
+      const sz = parseInt(nodeCount) > 0 ? parseInt(nodeCount) : 7;
+      generateGraph(sz);
+    } else {
+      // In BST mode, we don’t build a graph until first insert
+      setNodes([]);
+      setLinks([]);
+      setSteps([]);
+      setCurrentStep(0);
+      setBstTree(null);
     }
-    setSteps(simSteps);
+  }, [algorithm, nodeCount]);
+  
+
+  useEffect(()=>{
+    if(algorithm==='BST'||!nodes.length||(algorithm!=='BST'&&['DFS','BFS'].includes(algorithm)&&startNode==null))return;
+    let sim=[];
+    if(algorithm==='DFS')sim=simulateDFS(nodes,links,startNode);
+    if(algorithm==='BFS')sim=simulateBFS(nodes,links,startNode);
+    if(algorithm==='Kruskal')sim=simulateKruskal(nodes,links);
+    if(algorithm==='Prim')sim=simulatePrim(nodes,links,startNode);
+    setSteps(sim);
     setCurrentStep(0);
-  }, [nodes, links, algorithm, startNode, weightMap]);
+  },[nodes,links,algorithm,startNode,weightMap]);
 
-  // Prepare taken edges for MST
+  const activeEdges = steps[currentStep]?.activeEdges ?? [];
   const kruskalTaken = [];
-  if (algorithm === 'Kruskal') {
-    steps.slice(0, currentStep + 1).forEach(s => s.activeEdges?.forEach(([u, v]) => {
-      const a = Math.min(u, v), b = Math.max(u, v);
-      const key = `${a}-${b}`;
-      if (!kruskalTaken.find(e => e.u === a && e.v === b)) kruskalTaken.push({ u: a, v: b, w: weightMap[key] });
-    }));
-  }
-  const primTaken = [];
-  if (algorithm === 'Prim') {
-    steps.slice(0, currentStep + 1).forEach(s => s.activeEdges?.forEach(([u, v]) => {
-      const a = Math.min(u, v), b = Math.max(u, v);
-      const key = `${a}-${b}`;
-      if (!primTaken.find(e => e.u === a && e.v === b)) primTaken.push({ u: a, v: b, w: weightMap[key] });
-    }));
-  }
-  const takenEdges = algorithm === 'Kruskal' ? kruskalTaken :
-                     algorithm === 'Prim'    ? primTaken     : [];
-  const kruskalRemaining = algorithm === 'Kruskal'
-    ? sortedEdges.filter(e => !kruskalTaken.find(t => t.u === e.u && t.v === e.v))
-    : [];
-  const primRemaining = algorithm === 'Prim'
-    ? sortedEdges.filter(e => !primTaken.find(t => t.u === e.u && t.v === e.v))
-    : [];
+  if(algorithm==='Kruskal')steps.slice(0,currentStep+1).forEach(s=>s.activeEdges?.forEach(([u,v])=>{
+    const a=Math.min(u,v),b=Math.max(u,v),k=`${a}-${b}`;
+    if(!kruskalTaken.find(e=>e.u===a&&e.v===b))kruskalTaken.push({u:a,v:b,w:weightMap[k]});
+  }));
+  const primTaken=[];
+  if(algorithm==='Prim')steps.slice(0,currentStep+1).forEach(s=>s.activeEdges?.forEach(([u,v])=>{
+    const a=Math.min(u,v),b=Math.max(u,v),k=`${a}-${b}`;
+    if(!primTaken.find(e=>e.u===a&&e.v===b))primTaken.push({u:a,v:b,w:weightMap[k]});
+  }));
+  const takenEdges = algorithm==='Kruskal'?kruskalTaken:algorithm==='Prim'?primTaken:[];
+  const kruskalRemaining=algorithm==='Kruskal'?sortedEdges.filter(e=>!kruskalTaken.find(t=>t.u===e.u&&t.v===e.v)):[];
+  const primRemaining=algorithm==='Prim'?sortedEdges.filter(e=>!primTaken.find(t=>t.u===e.u&&t.v===e.v)):[];
 
-  // Render graph
-  useEffect(() => renderGraph(), [nodes, links, currentStep]);
-  function renderGraph() {
-    const svg = d3.select(svgRef.current); svg.selectAll('*').remove();
+  useEffect(() => {
     if (!nodes.length) return;
+  
+    // BST: delegate to drawGraph
+    if (algorithm === 'BST') {
+      if (!bstTree) return;
+      drawGraph(
+        svgRef.current,
+        nodes,
+        links,
+        true,  // tree layout
+        false  // directed = false
+      );
+      return;
+    }
+  
+    // — static force pre-laid positions + drag support —
+    const svg = d3.select(svgRef.current);
+    svg.selectAll('*').remove();
     const { width, height } = containerRef.current.getBoundingClientRect();
     const g = svg.append('g');
-    const active = steps[currentStep]?.activeEdges || [];
-
-    g.selectAll('line').data(links).enter().append('line')
-      .attr('x1', d => clamp(findNode(d.source).x, margin, width - margin))
-      .attr('y1', d => clamp(findNode(d.source).y, margin, height - margin))
-      .attr('x2', d => clamp(findNode(d.target).x, margin, width - margin))
-      .attr('y2', d => clamp(findNode(d.target).y, margin, height - margin))
-      .attr('stroke', d => {
-        const su = typeof d.source === 'object' ? d.source.id : d.source;
-        const sv = typeof d.target === 'object' ? d.target.id : d.target;
-        const key = `${Math.min(su, sv)}-${Math.max(su, sv)}`;
-        if (takenEdges.find(e => `${e.u}-${e.v}` === key)) return 'orange';
-        if (isEdgeActive(d, active)) return 'orange';
-        return '#999';
-      })
-      .attr('stroke-width', d => isEdgeActive(d, active) || takenEdges.some(e => `${e.u}-${e.v}` === `${Math.min(d.source,d.target)}-${Math.max(d.source,d.target)}`) ? 4 : 2)
-      .lower();
-
-    g.selectAll('circle').data(nodes).enter().append('circle')
-      .attr('cx', d => d.x).attr('cy', d => d.y).attr('r', 12)
+  
+    // 1) draw links once
+    const link = g.selectAll('line')
+      .data(links)
+      .enter().append('line')
+        .attr('stroke', d => {
+          const u = d.source.id ?? d.source, v = d.target.id ?? d.target;
+          const key = `${Math.min(u,v)}-${Math.max(u,v)}`;
+          if (takenEdges.some(e => `${e.u}-${e.v}` === key)) return 'orange';
+          if (isEdgeActive(d, activeEdges))               return 'orange';
+          return '#999';
+        })
+        .attr('stroke-width', d =>
+          (isEdgeActive(d, activeEdges)
+           || takenEdges.some(e => e.u===d.source.id || e.v===d.target.id))
+           ? 4 : 2
+        )
+        .attr('x1', d => clamp(d.source.x, margin, width  - margin))
+        .attr('y1', d => clamp(d.source.y, margin, height - margin))
+        .attr('x2', d => clamp(d.target.x, margin, width  - margin))
+        .attr('y2', d => clamp(d.target.y, margin, height - margin))
+        .lower();
+  
+    // 2) draw node groups (circle + text) with drag
+    const nodeG = g.selectAll('g.node')
+      .data(nodes)
+      .enter().append('g')
+        .attr('class', 'node')
+        .attr('transform', d =>
+          `translate(${clamp(d.x, margin, width - margin)},` +
+                     `${clamp(d.y, margin, height - margin)})`
+        )
+        .call(d3.drag()
+          .on('start', function(event, d) {
+            // bring this group to front
+            this.parentNode.appendChild(this);
+          })
+          .on('drag', function(event, d) {
+            // update data coords
+            d.x = clamp(event.x, margin, width - margin);
+            d.y = clamp(event.y, margin, height - margin);
+            // move group
+            d3.select(this)
+              .attr('transform', `translate(${d.x},${d.y})`);
+            // update only the affected links
+            link.filter(l => {
+              const sid = l.source.id ?? l.source;
+              const tid = l.target.id ?? l.target;
+              return sid === d.id || tid === d.id;
+            })
+            .attr('x1', l => clamp(l.source.x, margin, width - margin))
+            .attr('y1', l => clamp(l.source.y, margin, height - margin))
+            .attr('x2', l => clamp(l.target.x, margin, width - margin))
+            .attr('y2', l => clamp(l.target.y, margin, height - margin));
+          })
+        );
+  
+    // append circle in group
+    nodeG.append('circle')
+      .attr('r', 12)
       .attr('fill', d => {
-        if (['DFS','BFS'].includes(algorithm) && (d.id === startNode || isNodeVisited(d.id))) return 'orange';
-        if ((algorithm === 'Kruskal' || algorithm === 'Prim') && takenEdges.some(e => e.u === d.id || e.v === d.id)) return 'orange';
+        if (['DFS','BFS'].includes(algorithm)
+          && steps[currentStep]?.visited.includes(d.id)
+        ) return 'orange';
+        if (['Kruskal','Prim'].includes(algorithm)
+          && takenEdges.some(e => e.u===d.id || e.v===d.id)
+        ) return 'orange';
         return '#007bff';
-      })
-      .call(d3.drag().on('drag', (event, d) => {
-        const [x, y] = d3.pointer(event, svgRef.current); d.x = clamp(x, margin, width - margin); d.y = clamp(y, margin, height - margin); renderGraph();
-      }));
-
-    g.selectAll('text').data(nodes).enter().append('text')
-      .attr('x', d => d.x).attr('y', d => d.y - 16)
-      .attr('text-anchor', 'middle').attr('font-size', '10px')
+      });
+  
+    // append text in group
+    nodeG.append('text')
+      .attr('dy', -16)
+      .attr('text-anchor', 'middle')
+      .attr('font-size', '10px')
       .text(d => d.id);
-  }
+  
+  }, [
+    algorithm,      // redraw when mode changes
+    nodes,          // or initial positions
+    links,          // edges
+    currentStep,    // for DFS/BFS step-coloring
+    bstCurrentStep  // not used here but safe to include
+  ]);
 
-  // Traversal data
-  const visitedList = ['DFS','BFS'].includes(algorithm) ? (steps[currentStep]?.visited || []) : [];
-  const actEdge = ['DFS','BFS'].includes(algorithm) ? activeEdge() : null;
+  // UI lists
+  const visitedListUI = ['DFS','BFS'].includes(algorithm)?steps[currentStep]?.visited||[]:[];
+  const activeUI = ['DFS','BFS'].includes(algorithm)?activeEdges[0]:null;
 
   return (
     <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
       <div ref={containerRef} className="w-1/2 h-full border-r relative">
         <svg ref={svgRef} className="w-full h-full absolute inset-0" />
       </div>
-      <div className="w-1/2 h-full flex flex-col overflow-auto p-4">
-        <h2 className="text-2xl font-semibold mb-4">Simulări Algoritmi</h2>
-        <div className="flex flex-wrap items-center space-x-2 mb-4">
+      <div className="w-1/2 p-4 flex flex-col overflow-auto space-y-4">
+        <h2 className="text-2xl font-semibold">Simulări Algoritmi</h2>
+        <div className="flex flex-wrap space-x-2">
           {algorithms.map(algo=>(
             <button key={algo} onClick={()=>setAlgorithm(algo)} className={`px-3 py-1 rounded ${algorithm===algo?'bg-highlight text-white':'bg-gray-200'}`}>{algo}</button>
           ))}
-          <input type="number" min="1" placeholder="nr noduri" value={nodeCount} onChange={e=>setNodeCount(e.target.value)} className="w-20 border rounded px-2 py-1" />
-          <button onClick={()=>generateGraph(parseInt(nodeCount)||null)} className="px-3 py-1 bg-green-500 text-white rounded">Regenerate</button>
-          {['DFS','BFS'].includes(algorithm) && (
+        </div>
+
+        {/* BST UI */}
+        {algorithm==='BST'&&(
+          <>
+            <div className="flex space-x-2">
+              <input type="number" value={bstInsertVal} onChange={e=>setBstInsertVal(e.target.value)} placeholder="Valoare" className="border rounded px-2 py-1 flex-grow" />
+              <button onClick={handleBstInsert} className="bg-blue text-white px-3 py-1 rounded">Inserare</button>
+            </div>
+            <div className="flex space-x-2">
+              <input type="number" value={bstSearchVal} onChange={e=>setBstSearchVal(e.target.value)} placeholder="Caută valoare" className="border rounded px-2 py-1 flex-grow" />
+              <button onClick={handleBstSearch} className="bg-green-500 text-white px-3 py-1 rounded">Caută</button>
+            </div>
+            {bstSteps.length>0&&(
+              <div>
+                <h3 className="font-medium">Pași Căutare BST</h3>
+                <div className="flex space-x-1 overflow-x-auto py-2">
+                  {bstSteps.map((v,i)=>(<div key={i} className={`px-2 py-1 border rounded ${i===bstCurrentStep?'bg-highlight text-white':''}`}>{v}</div>))}
+                </div>
+                <div className="flex space-x-2">
+                  <button onClick={()=>setBstCurrentStep(s=>Math.max(0,s-1))} className="px-2 py-1 bg-blue text-white rounded">Prev</button>
+                  <button onClick={()=>setBstCurrentStep(s=>Math.min(bstSteps.length-1,s+1))} className="px-2 py-1 bg-blue text-white rounded">Next</button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Other Algorithms UI */}
+        {algorithm!=='BST'&&(
+          <>
             <div className="flex items-center space-x-2">
-              <label>Nodul de start:</label>
-              <select value={startNode||''} onChange={e=>setStartNode(Number(e.target.value))} className="border rounded px-2 py-1">
-                {nodes.map(n=> <option key={n.id} value={n.id}>{n.id}</option>)}
-              </select>
+              <input type="number" min="1" placeholder="nr noduri" value={nodeCount} onChange={e=>setNodeCount(e.target.value)} className="w-20 border rounded px-2 py-1" />
+              <button onClick={()=>generateGraph(parseInt(nodeCount)||7)} className="px-3 py-1 bg-green-500 text-white rounded">Regenerate</button>
+              {['DFS','BFS'].includes(algorithm)&&(
+                <div className="flex items-center space-x-2">
+                  <label>Nod start:</label>
+                  <select value={startNode||''} onChange={e=>setStartNode(Number(e.target.value))} className="border rounded px-2 py-1">
+                    {nodes.map(n=><option key={n.id} value={n.id}>{n.id}</option>)}
+                  </select>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-        {['DFS','BFS'].includes(algorithm) && (
-          <>
-            <h3 className="font-medium">Noduri vizitate</h3>
-            <div className="mb-4 overflow-x-auto">
-              <table className="w-max table-auto border-collapse whitespace-nowrap">
-                <thead><tr>{visitedList.map((n,i)=><th key={i} className="border px-2 py-1">{n}</th>)}</tr></thead>
-              </table>
+            {['DFS','BFS'].includes(algorithm)&&(
+              <>
+                <h3 className="font-medium">Noduri vizitate</h3>
+                <div className="overflow-x-auto mb-4"><table className="table-auto border-collapse"><thead><tr>{visitedListUI.map((n,i)=><th key={i} className="border px-2 py-1">{n}</th>)}</tr></thead></table></div>
+                <h3 className="font-medium">Muchie activă</h3>
+                <div className="p-2 bg-gray-100 rounded mb-4 text-center">{activeUI?`${activeUI[0]} - ${activeUI[1]}`:'-'}</div>
+              </>
+            )}
+            {algorithm==='Kruskal'&&(
+              <>
+                <h3 className="font-medium">Remaining Edges</h3>
+                <table className="mb-2 w-full table-auto border-collapse text-sm"><thead><tr className="bg-gray-100"><th className="border px-2 py-1">Edge</th><th className="border px-2 py-1">Weight</th></tr></thead><tbody>
+                  {kruskalRemaining.map(e=>{
+                    const key=`${e.u}-${e.v}`;
+                    return <tr key={key}><td className="border px-2 py-1">{e.u}-{e.v}</td><td className="border px-2 py-1 text-center"><input type="number" min="1" value={weightMap[key]} disabled={currentStep>0} onChange={ev=>{
+                      const w=Number(ev.target.value); setWeightMap(wm=>({...wm,[key]:w})); setLinks(ls=>ls.map(l=>{
+                        const su=typeof l.source==='object'?l.source.id:l.source; const sv=typeof l.target==='object'?l.target.id:l.target;
+                        if((su===e.u&&sv===e.v)||(su===e.v&&sv===e.u)) return{...l,weight:w}; return l;
+                      }));
+                    }} className="w-16 text-center border rounded"/></td></tr>;
+                  })}
+                </tbody></table>
+                <h3 className="font-medium">Taken Edges</h3>
+                <table className="mb-4 w-full table-auto border-collapse text-sm"><thead><tr className="bg-gray-100"><th className="border px-2 py-1">Edge</th><th className="border px-2 py-1">Weight</th></tr></thead><tbody>
+                  {kruskalTaken.map(e=><tr key={`${e.u}-${e.v}`}><td className="border px-2 py-1">{e.u}-{e.v}</td><td className="border px-2 py-1 text-center">{e.w}</td></tr>)}
+                </tbody></table>
+              </>
+            )}
+            {algorithm==='Prim'&&(
+              <>
+                <h3 className="font-medium">Remaining Edges</h3>
+                <table className="mb-2 w-full table-auto border-collapse text-sm"><tbody>
+                  {primRemaining.map(e=><tr key={`${e.u}-${e.v}`}><td className="border px-2 py-1">{e.u}-{e.v}</td><td className="border px-2 py-1 text-center"><input type="number" min="1" value={weightMap[`${e.u}-${e.v}`]} disabled={currentStep>0} onChange={ev=>{
+                    const w=Number(ev.target.value); setWeightMap(wm=>({...wm,[`${e.u}-${e.v}`]:w})); setLinks(ls=>ls.map(l=>{
+                      const su=typeof l.source==='object'?l.source.id:l.source; const sv=typeof l.target==='object'?l.target.id:l.target;
+                      if((su===e.u&&sv===e.v)||(su===e.v&&sv===e.u)) return{...l,weight:w}; return l;
+                    }));
+                  }} className="w-16 text-center border rounded"/></td></tr>)}
+                </tbody></table>
+                <h3 className="font-medium">Taken Edges</h3>
+                <table className="mb-4 w-full table-auto border-collapse text-sm"><tbody>
+                  {primTaken.map(e=><tr key={`${e.u}-${e.v}`}><td className="border px-2 py-1">{e.u}-{e.v}</td><td className="border px-2 py-1 text-center">{e.w}</td></tr>)}
+                </tbody></table>
+              </>
+            )}
+            <div className="flex space-x-2">
+              <button onClick={()=>setCurrentStep(s=>Math.max(0,s-1))} className="px-2 py-1 bg-blue text-white rounded">Prev</button>
+              <button onClick={()=>setCurrentStep(s=>Math.min(steps.length-1,s+1))} className="px-2 py-1 bg-blue text-white rounded">Next</button>
+              <span>Pas {currentStep+1}/{steps.length}</span>
             </div>
-            <h3 className="font-medium">Muchia Activă</h3>
-            <div className="mb-4 text-center p-2 bg-gray-100 rounded">{actEdge?`${actEdge[0]} - ${actEdge[1]}`:'-'}</div>
           </>
         )}
-        {algorithm==='Kruskal' && (
-          <>
-            <h3 className="font-medium">Remaining Edges</h3>
-            <table className="mb-2 w-full table-auto border-collapse text-sm"><thead><tr className="bg-gray-100"><th className="border px-2 py-1">Edge</th><th className="border px-2 py-1">Weight</th></tr></thead><tbody>
-              {kruskalRemaining.map(e=>{
-                const key=`${e.u}-${e.v}`;
-                return <tr key={key}><td className="border px-2 py-1">{e.u}-{e.v}</td><td className="border px-2 py-1 text-center"><input type="number" min="1" value={weightMap[key]} disabled={currentStep>0} onChange={ev=>{
-                  const w=Number(ev.target.value); setWeightMap(wm=>({...wm,[key]:w})); setLinks(ls=>ls.map(l=>{
-                    const su=typeof l.source==='object'?l.source.id:l.source; const sv=typeof l.target==='object'?l.target.id:l.target;
-                    if((su===e.u&&sv===e.v)||(su===e.v&&sv===e.u)) return{...l,weight:w}; return l;
-                  }));
-                }} className="w-16 text-center border rounded"/></td></tr>;
-              })}
-            </tbody></table>
-            <h3 className="font-medium">Taken Edges</h3>
-            <table className="mb-4 w-full table-auto border-collapse text-sm"><thead><tr className="bg-gray-100"><th className="border px-2 py-1">Edge</th><th className="border px-2 py-1">Weight</th></tr></thead><tbody>
-              {kruskalTaken.map(e=><tr key={`${e.u}-${e.v}`}><td className="border px-2 py-1">{e.u}-{e.v}</td><td className="border px-2 py-1 text-center">{e.w}</td></tr>)}
-            </tbody></table>
-          </>
-        )}
-        {algorithm==='Prim' && (
-          <>
-            <h3 className="font-medium">Remaining Edges</h3>
-            <table className="mb-2 w-full table-auto border-collapse text-sm"><tbody>
-              {primRemaining.map(e=><tr key={`${e.u}-${e.v}`}><td className="border px-2 py-1">{e.u}-{e.v}</td><td className="border px-2 py-1 text-center"><input type="number" min="1" value={weightMap[`${e.u}-${e.v}`]} disabled={currentStep>0} onChange={ev=>{
-                const w=Number(ev.target.value); setWeightMap(wm=>({...wm,[`${e.u}-${e.v}`]:w})); setLinks(ls=>ls.map(l=>{
-                  const su=typeof l.source==='object'?l.source.id:l.source; const sv=typeof l.target==='object'?l.target.id:l.target;
-                  if((su===e.u&&sv===e.v)||(su===e.v&&sv===e.u)) return{...l,weight:w}; return l;
-                }));
-              }} className="w-16 text-center border rounded"/></td></tr>)}
-            </tbody></table>
-            <h3 className="font-medium">Taken Edges</h3>
-            <table className="mb-4 w-full table-auto border-collapse text-sm"><tbody>
-              {primTaken.map(e=><tr key={`${e.u}-${e.v}`}><td className="border px-2 py-1">{e.u}-{e.v}</td><td className="border px-2 py-1 text-center">{e.w}</td></tr>)}
-            </tbody></table>
-          </>
-        )}
-        <div className="flex items-center space-x-2 mb-4">
-          <button onClick={()=>setCurrentStep(s=>Math.max(0,s-1))} className="px-2 py-1 bg-blue text-white rounded">Prec</button>
-          <button onClick={()=>setCurrentStep(s=>Math.min(steps.length-1,s+1))} className="px-2 py-1 bg-blue text-white rounded">Urm</button>
-          <span>Pas {currentStep+1}/{steps.length}</span>
-        </div>
       </div>
     </div>
   );
-}
-
-// Utility functions below...
-
-function generateUndirected(numNodes = 7) {
-  const nodes = Array.from({ length: numNodes }, (_, i) => ({ id: i + 1 }));
-  const links = [];
-  for (let i = 1; i <= numNodes; i++) {
-    for (let j = i + 1; j <= numNodes; j++) {
-      if (Math.random() < 0.3) {
-        links.push({ source: i, target: j });
-        links.push({ source: j, target: i });
-      }
-    }
-  }
-  return { nodes, links };
-}
-
-function generateWeightedGraph(numNodes = 7, extraEdges = 10) {
-  const nodes = Array.from({ length: numNodes }, (_, i) => ({ id: i + 1 }));
-  const links = [];
-  // tree backbone
-  for (let i = 2; i <= numNodes; i++) {
-    const p = Math.floor(Math.random() * (i - 1)) + 1;
-    const w = Math.floor(Math.random() * 20) + 1;
-    links.push({ source: p, target: i, weight: w });
-    links.push({ source: i, target: p, weight: w });
-  }
-  // extra edges
-  for (let k = 0; k < extraEdges; k++) {
-    const u = Math.floor(Math.random() * numNodes) + 1;
-    const v = Math.floor(Math.random() * numNodes) + 1;
-    if (u !== v) {
-      const w = Math.floor(Math.random() * 20) + 1;
-      links.push({ source: u, target: v, weight: w });
-      links.push({ source: v, target: u, weight: w });
-    }
-  }
-  return { nodes, links };
-}
-
-function simulateDFS(nodes, links, start) {
-  const adj = {};
-  nodes.forEach(n => (adj[n.id] = []));
-  links.forEach(l => {
-    const s = typeof l.source === 'object' ? l.source.id : l.source;
-    const t = typeof l.target === 'object' ? l.target.id : l.target;
-    adj[s].push(t);
-  });
-  const visited = new Set();
-  const steps = [];
-  function dfs(u) {
-    visited.add(u);
-    steps.push({ visited: Array.from(visited), activeEdges: [] });
-    for (const v of adj[u]) {
-      if (!visited.has(v)) {
-        steps.push({ visited: Array.from(visited), activeEdges: [[u, v]] });
-        dfs(v);
-      }
-    }
-  }
-  dfs(start);
-  return steps;
-}
-
-function simulateBFS(nodes, links, start) {
-  const adj = {};
-  nodes.forEach(n => (adj[n.id] = []));
-  links.forEach(l => {
-    const s = typeof l.source === 'object' ? l.source.id : l.source;
-    const t = typeof l.target === 'object' ? l.target.id : l.target;
-    adj[s].push(t);
-  });
-  const visited = new Set([start]);
-  const queue = [start];
-  const steps = [{ visited: [start], activeEdges: [] }];
-  while (queue.length) {
-    const u = queue.shift();
-    for (const v of adj[u]) {
-      if (!visited.has(v)) {
-        visited.add(v);
-        queue.push(v);
-        steps.push({ visited: Array.from(visited), activeEdges: [[u, v]] });
-      }
-    }
-  }
-  return steps;
-}
-
-function simulateKruskal(nodes, links) {
-  const parent = {};
-  function find(u) { return parent[u] === u ? u : (parent[u] = find(parent[u])); }
-  function union(u, v) { parent[find(u)] = find(v); }
-
-  const edges = [];
-  links.forEach(e => {
-    const u = typeof e.source === 'object' ? e.source.id : e.source;
-    const v = typeof e.target === 'object' ? e.target.id : e.target;
-    if (u < v) edges.push([u, v, e.weight]);
-  });
-  edges.sort((a, b) => a[2] - b[2] || a[0] - b[0]);
-
-  nodes.forEach(n => { parent[n.id] = n.id; });
-
-  const steps = [];
-  let count = 0;
-  for (const [u, v, w] of edges) {
-    if (count >= nodes.length - 1) break;
-    const ru = find(u), rv = find(v);
-    steps.push({ visited: [], activeEdges: [[u, v]], added: ru !== rv });
-    if (ru !== rv) {
-      union(u, v);
-      count++;
-    }
-  }
-  return steps;
-}
-
-function simulatePrim(nodes, links, start) {
-  const visited = new Set([start]);
-  let pq = links.filter(l => (typeof l.source === 'object' ? l.source.id : l.source) === start);
-  pq.sort((a, b) => a.weight - b.weight);
-  const steps = [{ visited: [start], activeEdges: [] }];
-  while (pq.length) {
-    const e = pq.shift();
-    const u = typeof e.source === 'object' ? e.source.id : e.source;
-    const v = typeof e.target === 'object' ? e.target.id : e.target;
-    steps.push({ visited: Array.from(visited), activeEdges: [[u, v]] });
-    if (!visited.has(v)) {
-      visited.add(v);
-      pq = pq.concat(
-        links.filter(l => (typeof l.source === 'object' ? l.source.id : l.source) === v && !visited.has((typeof l.target === 'object' ? l.target.id : l.target)))
-      );
-      pq.sort((a, b) => a.weight - b.weight);
-    }
-  }
-  return steps;
 }
