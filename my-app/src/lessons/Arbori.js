@@ -5,6 +5,7 @@ export default function Arbori() {
     <div className="max-w-6xl mx-auto p-8 text-dark-blue">
       <h1 className="text-4xl font-extrabold mb-8">Arbori</h1>
 
+      {/* Definiție */}
       <section className="mb-12">
         <h2 className="text-3xl font-bold mb-4">Definiție</h2>
         <p className="mb-4">
@@ -12,6 +13,7 @@ export default function Arbori() {
         </p>
       </section>
 
+      {/* Termeni Importanți */}
       <section className="mb-12">
         <h2 className="text-3xl font-bold mb-4">Termeni Importanți</h2>
         <ul className="list-disc list-inside space-y-2">
@@ -29,6 +31,7 @@ export default function Arbori() {
         </ul>
       </section>
 
+      {/* Reprezentare */}
       <section className="mb-12">
         <h2 className="text-3xl font-bold mb-4">Metode de Reprezentare</h2>
         <ul className="list-disc list-inside space-y-2">
@@ -39,6 +42,7 @@ export default function Arbori() {
         </ul>
       </section>
 
+      {/* Proprietăți */}
       <section className="mb-12">
         <h2 className="text-3xl font-bold mb-4">Proprietăți ale Arborilor</h2>
         <ul className="list-disc list-inside space-y-2">
@@ -50,6 +54,7 @@ export default function Arbori() {
         </ul>
       </section>
 
+      {/* Algoritmi */}
       <section className="mb-12">
         <h2 className="text-3xl font-bold mb-4">Algoritmi Importanți</h2>
         <ul className="list-disc list-inside space-y-4">
@@ -60,6 +65,7 @@ export default function Arbori() {
         </ul>
       </section>
 
+      {/* Formule */}
       <section className="mb-12">
         <h2 className="text-3xl font-bold mb-4">Formule și Relații</h2>
         <ul className="list-disc list-inside space-y-2">
@@ -70,6 +76,36 @@ export default function Arbori() {
         </ul>
       </section>
 
+      {/* Arbori Binari */}
+      <section className="mb-12">
+        <h2 className="text-3xl font-bold mb-4">Arbori Binari</h2>
+        <p className="mb-4">
+          Un arbore binar este o structură de date în care fiecare nod are cel mult doi copii: unul stâng și unul drept.
+        </p>
+
+        <h3 className="text-2xl font-semibold mt-6 mb-2">Tipuri de Arbori Binari</h3>
+        <ul className="list-disc list-inside space-y-2">
+          <li><strong>Arbore binar complet:</strong> toate nivelurile, cu excepția ultimului, sunt complet umplute, iar ultimul este umplut de la stânga la dreapta.</li>
+          <li><strong>Arbore binar perfect:</strong> toate nivelurile sunt complet umplute și fiecare nod are exact doi copii sau niciunul.</li>
+          <li><strong>Arbore binar echilibrat:</strong> diferența de înălțime dintre subarborele stâng și drept este cel mult 1 pentru orice nod.</li>
+          <li><strong>Arbore binar de căutare (BST):</strong> pentru orice nod, valorile din subarborele stâng sunt mai mici, iar cele din subarborele drept sunt mai mari.</li>
+        </ul>
+
+        <h3 className="text-2xl font-semibold mt-6 mb-2">Proprietăți ale Arborilor Binari</h3>
+        <ul className="list-disc list-inside space-y-2">
+          <li>Numărul maxim de noduri la nivelul k este 2<sup>k</sup>.</li>
+          <li>Numărul maxim de noduri într-un arbore de înălțime h este 2<sup>h+1</sup> - 1.</li>
+          <li>Într-un arbore binar perfect, numărul frunzelor este 2<sup>h</sup>.</li>
+        </ul>
+
+        <h3 className="text-2xl font-semibold mt-6 mb-2">Algoritmi pe Arbori Binari</h3>
+        <ul className="list-disc list-inside space-y-2">
+          <li><strong>Inserare și căutare în BST:</strong> operații eficiente dacă arborele este echilibrat (complexitate O(log n)).</li>
+          <li><strong>Parcurgere inordine (in-order):</strong> vizitează nodurile în ordine crescătoare într-un BST.</li>
+          <li><strong>Parcurgere preordine și postordine:</strong> utile pentru serializare, reconstrucție sau evaluare de expresii.</li>
+          <li><strong>Construirea arborelui din parcurgeri:</strong> se poate reconstrui arborele dacă sunt cunoscute două dintre cele trei parcurgeri (in, pre, post).</li>
+        </ul>
+      </section>
     </div>
   );
 }
