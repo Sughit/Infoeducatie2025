@@ -34,8 +34,21 @@ export default function Simulation() {
   const [bstSteps, setBstSteps] = useState([]);
   const [bstCurrentStep, setBstCurrentStep] = useState(0);
 
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+
   const svgRef = useRef();
   const containerRef = useRef();
+
+  // Track container size
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const observer = new ResizeObserver(entries => {
+      const { width, height } = entries[0].contentRect;
+      setDimensions({ width, height });
+    });
+    observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   // BST helpers
   const insertIntoBST = useCallback((node, val) => {
@@ -202,122 +215,106 @@ export default function Simulation() {
   const kruskalRemaining=algorithm==='Kruskal'?sortedEdges.filter(e=>!kruskalTaken.find(t=>t.u===e.u&&t.v===e.v)):[];
   const primRemaining=algorithm==='Prim'?sortedEdges.filter(e=>!primTaken.find(t=>t.u===e.u&&t.v===e.v)):[];
 
+  // Draw/update graph whenever nodes, links, steps, or dimensions change
   useEffect(() => {
-    if (!nodes.length) return;
-  
+    // wait for data and size
+    if (!nodes.length || !dimensions.width || !dimensions.height) return;
+
     // BST: delegate to drawGraph
     if (algorithm === 'BST') {
       if (!bstTree) return;
-      drawGraph(
-        svgRef.current,
-        nodes,
-        links,
-        true,  // tree layout
-        false  // directed = false
-      );
+      drawGraph(svgRef.current, nodes, links, true, false);
       return;
     }
-  
-    // — static force pre-laid positions + drag support —
+
+    // compute active/taken edges
+    const activeEdges = steps[currentStep]?.activeEdges ?? [];
+    const takenEdges = [];
+    if (['Kruskal','Prim'].includes(algorithm)) {
+      steps.slice(0, currentStep+1).forEach(s => s.activeEdges?.forEach(([u,v]) => {
+        const a = Math.min(u,v), b = Math.max(u,v), key = `${a}-${b}`;
+        if (!takenEdges.find(e => e.u===a&&e.v===b)) takenEdges.push({u:a,v:b,w:weightMap[key]});
+      }));
+    }
+
+    const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
     const svg = d3.select(svgRef.current);
     svg.selectAll('*').remove();
-    const { width, height } = containerRef.current.getBoundingClientRect();
+    const width = dimensions.width;
+    const height = dimensions.height;
     const g = svg.append('g');
-  
-    // 1) draw links once
+
+    // draw links
     const link = g.selectAll('line')
       .data(links)
       .enter().append('line')
         .attr('stroke', d => {
           const u = d.source.id ?? d.source, v = d.target.id ?? d.target;
           const key = `${Math.min(u,v)}-${Math.max(u,v)}`;
-          if (takenEdges.some(e => `${e.u}-${e.v}` === key)) return 'orange';
-          if (isEdgeActive(d, activeEdges))               return 'orange';
+          if (takenEdges.some(e=>`${e.u}-${e.v}`===key)) return 'orange';
+          if (activeEdges.some(([a,b])=>(a===u&&b===v)||(a===v&&b===u))) return 'orange';
           return '#999';
         })
         .attr('stroke-width', d =>
-          (isEdgeActive(d, activeEdges)
-           || takenEdges.some(e => e.u===d.source.id || e.v===d.target.id))
-           ? 4 : 2
+          activeEdges.some(([a,b])=>(a===d.source.id&&b===d.target.id)||(a===d.target.id&&b===d.source.id))
+          || takenEdges.some(e=>e.u===d.source.id&&e.v===d.target.id)
+          ? 4 : 2
         )
-        .attr('x1', d => clamp(d.source.x, margin, width  - margin))
+        .attr('x1', d => clamp(d.source.x, margin, width - margin))
         .attr('y1', d => clamp(d.source.y, margin, height - margin))
-        .attr('x2', d => clamp(d.target.x, margin, width  - margin))
+        .attr('x2', d => clamp(d.target.x, margin, width - margin))
         .attr('y2', d => clamp(d.target.y, margin, height - margin))
         .lower();
-  
-    // 2) draw node groups (circle + text) with drag
+
+    // draw nodes with drag
     const nodeG = g.selectAll('g.node')
       .data(nodes)
       .enter().append('g')
-        .attr('class', 'node')
-        .attr('transform', d =>
-          `translate(${clamp(d.x, margin, width - margin)},` +
-                     `${clamp(d.y, margin, height - margin)})`
-        )
+        .attr('class','node')
+        .attr('transform', d=>`translate(${clamp(d.x,margin,width-margin)},${clamp(d.y,margin,height-margin)})`)
         .call(d3.drag()
-          .on('start', function(event, d) {
-            // bring this group to front
-            this.parentNode.appendChild(this);
-          })
-          .on('drag', function(event, d) {
-            // update data coords
-            d.x = clamp(event.x, margin, width - margin);
-            d.y = clamp(event.y, margin, height - margin);
-            // move group
-            d3.select(this)
-              .attr('transform', `translate(${d.x},${d.y})`);
-            // update only the affected links
-            link.filter(l => {
-              const sid = l.source.id ?? l.source;
-              const tid = l.target.id ?? l.target;
-              return sid === d.id || tid === d.id;
+          .on('start', function(event,d){ this.parentNode.appendChild(this); })
+          .on('drag', function(event,d){
+            d.x = clamp(event.x,margin,width-margin);
+            d.y = clamp(event.y,margin,height-margin);
+            d3.select(this).attr('transform',`translate(${d.x},${d.y})`);
+            link.filter(l=>{
+              const su=l.source.id??l.source, sv=l.target.id??l.target;
+              return su===d.id||sv===d.id;
             })
-            .attr('x1', l => clamp(l.source.x, margin, width - margin))
-            .attr('y1', l => clamp(l.source.y, margin, height - margin))
-            .attr('x2', l => clamp(l.target.x, margin, width - margin))
-            .attr('y2', l => clamp(l.target.y, margin, height - margin));
+            .attr('x1',l=>clamp(l.source.x,margin,width-margin))
+            .attr('y1',l=>clamp(l.source.y,margin,height-margin))
+            .attr('x2',l=>clamp(l.target.x,margin,width-margin))
+            .attr('y2',l=>clamp(l.target.y,margin,height-margin));
           })
         );
-  
-    // append circle in group
+
     nodeG.append('circle')
-      .attr('r', 12)
+      .attr('r',12)
       .attr('fill', d => {
-        if (['DFS','BFS'].includes(algorithm)
-          && steps[currentStep]?.visited.includes(d.id)
-        ) return 'orange';
-        if (['Kruskal','Prim'].includes(algorithm)
-          && takenEdges.some(e => e.u===d.id || e.v===d.id)
-        ) return 'orange';
+        if (['DFS','BFS'].includes(algorithm) && steps[currentStep]?.visited.includes(d.id)) return 'orange';
+        if (['Kruskal','Prim'].includes(algorithm) && takenEdges.some(e=>e.u===d.id||e.v===d.id)) return 'orange';
         return '#007bff';
       });
-  
-    // append text in group
+
     nodeG.append('text')
-      .attr('dy', -16)
-      .attr('text-anchor', 'middle')
-      .attr('font-size', '10px')
-      .text(d => d.id);
-  
-  }, [
-    algorithm,      // redraw when mode changes
-    nodes,          // or initial positions
-    links,          // edges
-    currentStep,    // for DFS/BFS step-coloring
-    bstCurrentStep  // not used here but safe to include
-  ]);
+      .attr('dy',-16)
+      .attr('text-anchor','middle')
+      .attr('font-size','10px')
+      .text(d=>d.id);
+
+  }, [algorithm, nodes, links, steps, currentStep, bstCurrentStep, weightMap, dimensions]);
 
   // UI lists
   const visitedListUI = ['DFS','BFS'].includes(algorithm)?steps[currentStep]?.visited||[]:[];
   const activeUI = ['DFS','BFS'].includes(algorithm)?activeEdges[0]:null;
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden">
-      <div ref={containerRef} className="w-1/2 h-full border-r relative">
+    <div className="flex flex-col md:flex-row h-[calc(100vh-4rem)] overflow-hidden">
+      <div ref={containerRef} className="w-full h-1/2 md:w-1/2 md:h-full border-b md:border-b-0 md:border-r relative">
         <svg ref={svgRef} className="w-full h-full absolute inset-0" />
       </div>
-      <div className="w-1/2 p-4 flex flex-col overflow-auto space-y-4">
+      <div className="w-full h-1/2 md:w-1/2 md:h-full p-4 flex flex-col overflow-auto space-y-4">
         <h2 className="text-2xl font-semibold">Simulări Algoritmi</h2>
         <div className="flex flex-wrap space-x-2">
           {algorithms.map(algo=>(
