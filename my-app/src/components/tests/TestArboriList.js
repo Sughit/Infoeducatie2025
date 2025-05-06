@@ -42,8 +42,8 @@ export default function TestArboriList() {
           </p>
           <p className="text-gray-700">
             {test.description
-              ? test.description.slice(0, 100) + '…'
-              : test.question.slice(0, 100) + '…'}
+              ? (test.description.length > 100 ? test.description.slice(0, 40) + '…' : test.description)
+              : (test.question.length > 100 ? test.question.slice(0, 40) + '…' : test.question)}
           </p>
         </div>
       ))}

@@ -35,15 +35,15 @@ export default function TestNeorientateList() {
           className="cursor-pointer border rounded-lg p-4 hover:shadow-lg transition"
         >
           <h3 className="text-lg font-semibold mb-2">
-            {test.title || test.question.slice(0, 50) + '…'}
+            {test.title || (test.question.length > 50 ? test.question.slice(0, 50) + '…' : test.question)}
           </h3>
           <p className="text-sm text-gray-500 mb-1">
             Dificultate: <span className="font-medium">{test.difficulty || 'N/A'}</span>
           </p>
           <p className="text-gray-700">
             {test.description
-              ? test.description.slice(0, 100) + '…'
-              : test.question.slice(0, 100) + '…'}
+              ? (test.description.length > 100 ? test.description.slice(0, 40) + '…' : test.description)
+              : (test.question.length > 100 ? test.question.slice(0, 40) + '…' : test.question)}
           </p>
         </div>
       ))}
