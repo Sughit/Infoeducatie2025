@@ -12,7 +12,6 @@ export default function TestArboriDetail() {
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState(null)
 
-  // Fetch test data
   useEffect(() => {
     const fetchTest = async () => {
       if (!testId) return
@@ -35,7 +34,7 @@ export default function TestArboriDetail() {
             }
           }
           setTest(data)
-          setAnswers(Array(data.questions?.length || 0).fill(''))
+          setAnswers(Array(data.questions.length).fill(''))
         } else {
           setError('Testul nu a fost găsit.')
         }
@@ -47,7 +46,6 @@ export default function TestArboriDetail() {
     fetchTest()
   }, [testId])
 
-  // Scroll to top on submit
   useEffect(() => {
     if (submitted) window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [submitted])
@@ -66,13 +64,18 @@ export default function TestArboriDetail() {
   }, [answers, test])
 
   const percentScore = useMemo(() => {
-    if (!test?.questions?.length) return 0;
-    return Math.round((score / test.questions.length) * 100);
-  }, [score, test]);
-  
+    if (!test?.questions.length) return 0
+    return Math.round((score / test.questions.length) * 100)
+  }, [score, test])
+
+  const allAnswered = useMemo(() => answers.every(a => a !== ''), [answers])
 
   const handleSubmit = async e => {
     e.preventDefault()
+    if (!allAnswered) {
+      setError('Te rog selectează o opțiune pentru fiecare întrebare înainte de trimite.')
+      return
+    }
     try {
       const user = auth.currentUser
       if (!user) throw new Error('Trebuie să fii autentificat pentru a salva rezultatul.')
@@ -103,8 +106,9 @@ export default function TestArboriDetail() {
             <span className="block text-sm text-gray-500">Secțiune: Arbori</span>
           </h2>
           {test.description && <p className="text-center text-gray-600">{test.description}</p>}
+          {error && <p className="text-red-500 text-center">{error}</p>}
           <form onSubmit={handleSubmit} className="space-y-6">
-            {test.questions?.map((q, qi) => (
+            {test.questions.map((q, qi) => (
               <div key={qi} className="p-4 border rounded-lg space-y-3">
                 <p className="font-medium">Întrebarea {qi + 1}: {q.question}</p>
                 {q.imageUrl && <img src={q.imageUrl} alt="" className="max-h-48 object-contain mx-auto" />}
@@ -135,8 +139,12 @@ export default function TestArboriDetail() {
                 </div>
               </div>
             ))}
-            <button type="submit" className="w-full py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
-              Vezi scor
+            <button
+              type="submit"
+              disabled={!allAnswered}
+              className={`w-full py-2 rounded-lg transition ${allAnswered ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-gray-300 text-gray-600 cursor-not-allowed'}`}
+            >
+              Trimite testul
             </button>
           </form>
         </>
@@ -144,9 +152,9 @@ export default function TestArboriDetail() {
         <>
           <h2 className="text-2xl font-semibold text-center">Rezultat</h2>
           <p className="text-center text-lg">
-            Ai răspuns corect la <span className="font-bold">{score}</span> din <span className="font-bold">{test.questions?.length}</span> întrebări.
+            Ai răspuns corect la <span className="font-bold">{score}</span> din <span className="font-bold">{test.questions.length}</span> întrebări.
           </p>
-          {test.questions?.map((q, qi) => {
+          {test.questions.map((q, qi) => {
             const correct = answers[qi] === q.correctAnswer
             return (
               <div key={qi} className="p-4 border rounded-lg space-y-3">

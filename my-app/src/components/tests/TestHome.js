@@ -12,6 +12,9 @@ export default function TestHome() {
   const [user, setUser] = useState(null);
   const [error, setError] = useState(null);
 
+  // determine if we have no user or no attempts
+  const isEmpty = !user || attemptsCount === 0;
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setUser(u);
@@ -44,23 +47,24 @@ export default function TestHome() {
       }
     });
     return () => unsubscribe();
-  }, []);
+  }, [attemptsCount]);
 
   if (loading) return <div className="flex items-center justify-center h-screen">Se încarcă...</div>;
   if (error) return <div className="flex items-center justify-center h-screen text-red-600">{error}</div>;
 
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
-      <div className="p-6 w-full max-w-md mx-auto md:max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-4 md:space-y-0 space-y-6 h-[calc(100vh-4rem)] md:grid-rows-[auto_auto_1fr_auto]">
+    <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] overflow-hidden outline outline-2 outline-gray-300">
+      {/* make grid single-column if empty, two columns otherwise */}
+      <div className={`p-6 w-full max-w-md mx-auto md:max-w-4xl shadow grid grid-cols-1 ${!isEmpty ? 'md:grid-cols-2' : ''} gap-4 md:space-y-0 space-y-6 items-center justify-center`}>
         {/* Title spans both columns on desktop */}
-        <h1 className="text-3xl font-bold text-center md:col-span-2 md:row-start-1 pt-10">Teste Grafuri & Arbori</h1>
-        <p className="text-center text-gray-600 md:col-span-2 md:row-start-2">
+        <h1 className="text-3xl font-bold text-center md:col-span-2">Teste Grafuri & Arbori</h1>
+        <p className="text-center text-gray-600 md:col-span-2">
           Exersează algoritmi de grafuri și arbori prin teste interactive.
         </p>
 
-        {/* Recent tests list - left column on desktop, second block on mobile */}
-        {user && (
-          <div className="space-y-2 md:col-start-1 md:row-start-3 md:row-span-2 ">
+        {/* Recent tests list only if we have attempts */}
+        { !isEmpty && user && (
+          <div className="space-y-2">
             <h2 className="text-lg font-semibold">Ultimele teste rezolvate</h2>
             <ul className="list-disc list-inside text-gray-700">
               {recentTests.map((test, idx) => (
@@ -76,43 +80,33 @@ export default function TestHome() {
           </div>
         )}
 
-        <div className="md:space-y-10">
-          {/* Statistics cards - right column on desktop, first row on mobile */}
-          <div className="grid grid-cols-3 gap-4 md:col-start-2 md:row-start-3 md:pb-0 pb-10">
+        {/* Stats & nav group: always shown, centered if empty */}
+        <div className={`flex flex-col space-y-4 "+(isEmpty?"h-[calc(100vh-4rem)] justify-center":"md:space-y-2") ${!isEmpty ? 'md:space-y-2' : 'space-y-6'} items-center justify-center`}>  
+          {/* Statistics cards */}
+          <div className="grid grid-cols-3 gap-4">
             <div className="p-2 bg-white rounded-lg shadow text-center">
               <h2 className="text-xl font-bold">{stats.totalTests}</h2>
               <p>Teste pe platformă</p>
             </div>
             {user && (
-              <div className="p-4 bg-white rounded-lg shadow text-center">
+              <div className="p-2 bg-white rounded-lg shadow text-center">
                 <h2 className="text-xl font-bold">{attemptsCount}</h2>
                 <p>Teste rezolvate</p>
               </div>
             )}
             {user && (
-              <div className="p-4 bg-white rounded-lg shadow text-center">
-                <h2 className="text-xl font-bold">
-                  {attemptsCount > 0 ? `${stats.averageScore}%` : "-"}
-                </h2>
+              <div className="p-2 bg-white rounded-lg shadow text-center">
+                <h2 className="text-xl font-bold">{attemptsCount > 0 ? `${stats.averageScore}%` : "-"}</h2>
                 <p>Scor mediu</p>
               </div>
             )}
           </div>
-
-          {/* Navigation - under stats on desktop, under list on mobile */}
-          <nav className="space-y-2 order-3 md:order-3 md:col-start-2 md:row-start-4">
-            <Link to="neorientate" className="block w-full text-center py-2 bg-blue text-white rounded">
-              Grafuri Neorientate
-            </Link>
-            <Link to="orientate" className="block w-full text-center py-2 bg-blue text-white rounded">
-              Grafuri Orientate
-            </Link>
-            <Link to="arbori" className="block w-full text-center py-2 bg-blue text-white rounded">
-              Arbori
-            </Link>
-            <Link to="create" className="block w-full text-center py-2 bg-green-600 text-white rounded mt-4">
-              Creează un test nou
-            </Link>
+          {/* Navigation buttons */}
+          <nav className="space-y-2 w-full max-w-xs">
+            <Link to="neorientate" className="block w-full text-center py-2 bg-blue text-white rounded">Grafuri Neorientate</Link>
+            <Link to="orientate" className="block w-full text-center py-2 bg-blue text-white rounded">Grafuri Orientate</Link>
+            <Link to="arbori" className="block w-full text-center py-2 bg-blue text-white rounded">Arbori</Link>
+            <Link to="create" className="block w-full text-center py-2 bg-green-600 text-white rounded">Creează un test nou</Link>
           </nav>
         </div>
       </div>
