@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useContext } from 'react';
+// src/components/Profile.js
+import React, { useState, useEffect } from 'react';
 import { auth } from '../firebase';
 import {
   updatePassword,
@@ -8,20 +9,15 @@ import {
   signOut,
 } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
-import { Sun, Moon } from 'lucide-react';
-import { ThemeContext } from './ui/ThemeContext';
 
 export default function Profile() {
-  const [user, setUser] = useState(null);
-  const [oldPassword, setOldPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
+  const [user, setUser]                 = useState(null);
+  const [oldPassword, setOldPassword]   = useState('');
+  const [newPassword, setNewPassword]   = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [message, setMessage] = useState(null);
-  const navigate = useNavigate();
+  const [message, setMessage]           = useState(null);
+  const navigate                        = useNavigate();
 
-  const { darkMode, toggle } = useContext(ThemeContext);
-
-  // Auth listener
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, u => {
       if (u) setUser(u);
@@ -61,15 +57,8 @@ export default function Profile() {
   if (!user) return null;
 
   return (
-    <div className={`min-h-screen p-4 flex flex-col items-center ${darkMode ? 'bg-gray-900 text-white' : 'bg-white text-dark-blue'}`}>
-      {/* Dark Mode Toggle */}
-      <div className="w-full max-w-md flex justify-end mb-4">
-        <button onClick={toggle}>
-          {darkMode ? <Sun /> : <Moon />}
-        </button>
-      </div>
-
-      <div className={`w-full max-w-md rounded-lg shadow p-6 ${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-dark-blue'}`}>
+    <div className="flex items-center justify-center p-4 min-h-[calc(100vh-4rem)]">
+      <div className="w-full max-w-md bg-white rounded-lg shadow p-6">
         <h1 className="text-2xl font-semibold mb-4 text-center">Profil</h1>
         <p className="mb-4 text-center"><strong>Email:</strong> {user.email}</p>
         <form onSubmit={handleChangePassword} className="space-y-4">
@@ -79,7 +68,7 @@ export default function Profile() {
               type="password"
               value={oldPassword}
               onChange={e => setOldPassword(e.target.value)}
-              className={`mt-1 w-full p-2 border rounded ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+              className="mt-1 w-full p-2 border rounded"
               required
             />
           </label>
@@ -89,7 +78,7 @@ export default function Profile() {
               type="password"
               value={newPassword}
               onChange={e => setNewPassword(e.target.value)}
-              className={`mt-1 w-full p-2 border rounded ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+              className="mt-1 w-full p-2 border rounded"
               required
             />
           </label>
@@ -99,23 +88,23 @@ export default function Profile() {
               type="password"
               value={confirmPassword}
               onChange={e => setConfirmPassword(e.target.value)}
-              className={`mt-1 w-full p-2 border rounded ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+              className="mt-1 w-full p-2 border rounded"
               required
             />
           </label>
-          {message && <p className="text-center text-red-500">{message}</p>}
           <button
             type="submit"
-            className="w-full bg-blue text-white py-2 rounded hover:bg-blue-dark transition"
+            className="w-full bg-blue text-white py-2 rounded hover:bg-light-blue transition"
           >
             Schimbă parola
           </button>
         </form>
+        {message && <p className="mt-4 text-center text-red-500">{message}</p>}
         <button
           onClick={handleLogout}
-          className="mt-4 w-full bg-red-500 text-white py-2 rounded hover:bg-red-600 transition"
+          className="mt-6 w-full border-2 border-highlight text-highlight py-2 rounded hover:bg-highlight hover:text-white transition"
         >
-          Deconectează-te
+          Deconectare
         </button>
       </div>
     </div>
