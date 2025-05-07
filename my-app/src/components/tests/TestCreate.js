@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
 import { db, storage } from '../../firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { v4 as uuidv4 } from 'uuid';
 
 export default function TestCreate() {
   const [section, setSection] = useState('neorientate');
@@ -11,27 +11,33 @@ export default function TestCreate() {
   const [difficulty, setDifficulty] = useState('usor');
   const [description, setDescription] = useState('');
 
-  // support multiple questions
+  // support multiple questions with stable IDs
   const [questions, setQuestions] = useState([
-    { question: '', imageFile: null, correctAnswer: '', wrongAnswers: ['', '', ''] }
+    { id: uuidv4(), question: '', imageFile: null, correctAnswer: '', wrongAnswers: ['', '', ''] }
   ]);
 
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // handlers
-  const handleQuestionChange = (qi, field, value) => {
-    const copy = [...questions];
-    copy[qi][field] = value;
-    setQuestions(copy);
+  const handleQuestionChange = (id, field, value) => {
+    setQuestions(prev => prev.map(q => q.id === id ? { ...q, [field]: value } : q));
   };
-  const handleWrongChange = (qi, wi, value) => {
-    const copy = [...questions];
-    copy[qi].wrongAnswers[wi] = value;
-    setQuestions(copy);
+  const handleWrongChange = (id, wi, value) => {
+    setQuestions(prev => prev.map(q => {
+      if (q.id !== id) return q;
+      const wrong = [...q.wrongAnswers]; wrong[wi] = value;
+      return { ...q, wrongAnswers: wrong };
+    }));
   };
-  const addQuestion = () => setQuestions(prev => [...prev, { question: '', imageFile: null, correctAnswer: '', wrongAnswers: ['', '', ''] }]);
-  const removeQuestion = qi => setQuestions(prev => prev.filter((_, i) => i !== qi));
+  const addQuestion = () => {
+    setQuestions(prev => [
+      ...prev,
+      { id: uuidv4(), question: '', imageFile: null, correctAnswer: '', wrongAnswers: ['', '', ''] }
+    ]);
+  };
+  const removeQuestion = index => {
+    setQuestions(prev => prev.filter((_, i) => i !== index));
+  };
 
   const handleSubmit = async e => {
     e.preventDefault();
@@ -103,34 +109,29 @@ export default function TestCreate() {
 
         {/* dynamic questions */}
         {questions.map((q, qi) => (
-          <div key={qi} className="p-4 border rounded relative space-y-2">
+          <div key={q.id} className="p-4 border rounded relative space-y-2">
             {questions.length > 1 && (
               <button type="button" onClick={() => removeQuestion(qi)} className="absolute top-2 right-2 text-red-500">×</button>
             )}
             <label className="block">
               Întrebarea #{qi + 1}
-              <textarea value={q.question} onChange={e => handleQuestionChange(qi, 'question', e.target.value)} rows={3} className="mt-1 w-full border rounded px-2 py-1" required />
-            </label>
-            <label className="block">
-              Imagine (opțional)
-              <input type="file" accept="image/*" onChange={e => handleQuestionChange(qi, 'imageFile', e.target.files[0] || null)} className="mt-1" />
+              <textarea value={q.question} onChange={e => handleQuestionChange(q.id, 'question', e.target.value)} rows={3} className="mt-1 w-full border rounded px-2 py-1" required />
             </label>
             <label className="block">
               Răspuns corect
-              <input type="text" value={q.correctAnswer} onChange={e => handleQuestionChange(qi, 'correctAnswer', e.target.value)} className="mt-1 w-full border rounded px-2 py-1" required />
+              <input type="text" value={q.correctAnswer} onChange={e => handleQuestionChange(q.id, 'correctAnswer', e.target.value)} className="mt-1 w-full border rounded px-2 py-1" required />
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {q.wrongAnswers.map((w, wi) => (
                 <label key={wi} className="block">
                   Răspuns greșit #{wi + 1}
-                  <input type="text" value={w} onChange={e => handleWrongChange(qi, wi, e.target.value)} className="mt-1 w-full border rounded px-2 py-1" required />
+                  <input type="text" value={w} onChange={e => handleWrongChange(q.id, wi, e.target.value)} className="mt-1 w-full border rounded px-2 py-1" required />
                 </label>
               ))}
             </div>
           </div>
         ))}
         <button type="button" onClick={addQuestion} className="w-full py-2 bg-yellow-500 text-white rounded">Adaugă întrebare</button>
-
         <button type="submit" className="w-full py-2 bg-indigo-600 text-white rounded disabled:opacity-50" disabled={loading}>
           {loading ? 'Se încarcă...' : 'Salvează testul'}
         </button>
