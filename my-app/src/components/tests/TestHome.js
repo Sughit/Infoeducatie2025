@@ -2,39 +2,37 @@ import React from "react";
 import { Link } from "react-router-dom";
 
 export default function TestHome() {
-  return (
-    <div className="h-[calc(100vh-4rem)] bg-gray-100 flex flex-col items-center justify-center">
-      <div className="w-full max-w-md bg-white shadow-lg rounded-2xl p-8">
-        <h1 className="text-4xl font-extrabold text-center text-blue mb-6">
-          Teste Grafuri & Arbori
-        </h1>
-        <nav className="space-y-4">
+    return (
+      <div className="p-6 max-w-md mx-auto space-y-4">
+        <h1 className="text-3xl font-bold text-center">Teste Grafuri & Arbori</h1>
+  
+        <nav className="space-y-2">
           <Link
             to="neorientate"
-            className="block w-full text-center py-3 bg-blue text-white rounded-xl shadow transition"
+            className="block w-full text-center py-2 bg-blue text-white rounded"
           >
             Grafuri Neorientate
           </Link>
           <Link
             to="orientate"
-            className="block w-full text-center py-3 bg-blue text-white rounded-xl shadow transition"
+            className="block w-full text-center py-2 bg-blue text-white rounded"
           >
             Grafuri Orientate
           </Link>
           <Link
             to="arbori"
-            className="block w-full text-center py-3 bg-blue text-white rounded-xl shadow transition"
+            className="block w-full text-center py-2 bg-blue text-white rounded"
           >
             Arbori
           </Link>
           <Link
             to="create"
-            className="block w-full text-center py-3 bg-green-500 text-white rounded-xl shadow transition mt-6"
+            className="block w-full text-center py-2 bg-green-600 text-white rounded mt-4"
           >
             Creează un test nou
           </Link>
         </nav>
       </div>
-    </div>
-  );
-}
+    )
+  }
+  
