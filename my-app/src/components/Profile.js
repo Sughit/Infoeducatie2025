@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { auth } from '../firebase';
-import '../index.css';
 import {
   updatePassword,
   onAuthStateChanged,
@@ -9,6 +8,8 @@ import {
   signOut,
 } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
+import { Sun, Moon } from 'lucide-react';
+import { ThemeContext } from './ui/ThemeContext';
 
 export default function Profile() {
   const [user, setUser] = useState(null);
@@ -17,6 +18,8 @@ export default function Profile() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [message, setMessage] = useState(null);
   const navigate = useNavigate();
+
+  const { darkMode, toggle } = useContext(ThemeContext);
 
   // Auth listener
   useEffect(() => {
@@ -58,53 +61,59 @@ export default function Profile() {
   if (!user) return null;
 
   return (
-    <div className="h-[calc(100vh-4rem)] pt-10 flex flex-col items-center profile-section">
-      <div className="w-full max-w-md profile-container">
-        <h1 className="home-title mb-4 text-center">Profil</h1>
-        <p className="home-text mb-4 text-center"><strong>Email:</strong> {user.email}</p>
+    <div className={`min-h-screen p-4 flex flex-col items-center ${darkMode ? 'bg-gray-900 text-white' : 'bg-white text-dark-blue'}`}>
+      {/* Dark Mode Toggle */}
+      <div className="w-full max-w-md flex justify-end mb-4">
+        <button onClick={toggle}>
+          {darkMode ? <Sun /> : <Moon />}
+        </button>
+      </div>
 
-        <form onSubmit={handleChangePassword} className="space-y-4 overflow-y-auto">
-          <label className="block home-text">
+      <div className={`w-full max-w-md rounded-lg shadow p-6 ${darkMode ? 'bg-gray-800 text-white' : 'bg-white text-dark-blue'}`}>
+        <h1 className="text-2xl font-semibold mb-4 text-center">Profil</h1>
+        <p className="mb-4 text-center"><strong>Email:</strong> {user.email}</p>
+        <form onSubmit={handleChangePassword} className="space-y-4">
+          <label className="block">
             Parola veche
             <input
               type="password"
               value={oldPassword}
               onChange={e => setOldPassword(e.target.value)}
-              className="profile-input"
+              className={`mt-1 w-full p-2 border rounded ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
               required
             />
           </label>
-          <label className="block home-text">
+          <label className="block">
             Noua parolă
             <input
               type="password"
               value={newPassword}
               onChange={e => setNewPassword(e.target.value)}
-              className="profile-input"
+              className={`mt-1 w-full p-2 border rounded ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
               required
             />
           </label>
-          <label className="block home-text">
+          <label className="block">
             Confirmă parola nouă
             <input
               type="password"
               value={confirmPassword}
               onChange={e => setConfirmPassword(e.target.value)}
-              className="profile-input"
+              className={`mt-1 w-full p-2 border rounded ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
               required
             />
           </label>
-          {message && <p className="text-center text-red-500 home-text">{message}</p>}
+          {message && <p className="text-center text-red-500">{message}</p>}
           <button
             type="submit"
-            className="profile-button"
+            className="w-full bg-blue text-white py-2 rounded hover:bg-blue-dark transition"
           >
             Schimbă parola
           </button>
         </form>
         <button
           onClick={handleLogout}
-          className="mt-4 profile-button-danger bg-red-500 hover:bg-red-600"
+          className="mt-4 w-full bg-red-500 text-white py-2 rounded hover:bg-red-600 transition"
         >
           Deconectează-te
         </button>
