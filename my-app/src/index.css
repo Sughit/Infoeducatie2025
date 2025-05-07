@@ -38,7 +38,199 @@ code {
     @apply bg-gray-700 border-gray-600 text-white;
   }
 
-  /* Poți face similar pentru butoane, card-uri etc. */
+  /* Stiluri specifice pentru Home */
+  .home-hero {
+    @apply bg-gradient-to-r from-blue to-light-blue text-white;
+  }
+  .dark .home-hero {
+    @apply bg-gradient-to-r from-gray-900 to-gray-800 text-gray-100;
+  }
+  .home-section {
+    @apply bg-white text-dark-blue;
+  }
+  .dark .home-section {
+    @apply bg-gray-900 text-gray-300;
+  }
+  .home-button {
+    @apply bg-highlight text-white;
+  }
+  .dark .home-button {
+    @apply bg-indigo-600 text-gray-200 hover:bg-indigo-500;
+  }
+  .home-title {
+    @apply text-4xl md:text-5xl font-extrabold;
+  }
+  .dark .home-title {
+    @apply text-gray-100;
+  }
+  .home-text {
+    @apply text-lg md:text-lg;
+  }
+  .dark .home-text {
+    @apply text-gray-300;
+  }
+  
+  /* Stiluri pentru navbar */
+  .navbar {
+    @apply bg-white text-dark-blue shadow-md; 
+  }
+  .dark .navbar {
+    @apply bg-gray-900 text-white shadow-md; 
+  }
+  .nav-link {
+    @apply px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200;
+  }
+  .nav-link-active {
+    @apply bg-highlight text-white;
+  }
+  .nav-link:hover,
+  .nav-link:focus {
+    @apply bg-highlight/10 text-highlight;
+  }
+  .dark .nav-link-active {
+    @apply bg-indigo-600 text-white;
+  }
+  .dark .nav-link:hover,
+  .dark .nav-link:focus {
+    @apply bg-gray-700 text-white;
+  }
+  /* Dropdown pentru desktop */
+  .dropdown-toggle {
+    @apply px-3 py-2 rounded-lg text-sm font-medium flex items-center space-x-1 transition-colors duration-150;
+  }
+  .dropdown-toggle:hover {
+    @apply bg-highlight/10 text-highlight;
+  }
+  .dark .dropdown-toggle:hover {
+    @apply bg-gray-700 text-white;
+  }
+  
+  /* Dropdown meniul */
+  .dropdown-menu {
+    @apply absolute left-0 mt-2 w-48 z-10 py-2 bg-white rounded-lg shadow-lg border border-gray-300;
+  }
+  .dark .dropdown-menu {
+    @apply bg-gray-800 border-gray-600;
+  }
+  .dropdown-menu-item {
+    @apply block px-4 py-2 text-gray-800 hover:bg-gray-100 transition-colors;
+  }
+  .dark .dropdown-menu-item {
+    @apply text-gray-300 hover:bg-gray-700;
+  }
+
+  /* Meniu mobil */
+  .mobile-menu {
+    @apply px-2 pt-2 pb-3 space-y-1 bg-white dark:bg-gray-900 z-40;
+  }
+  .mobile-menu-item {
+    @apply block px-4 py-2 text-dark-blue dark:text-white rounded-lg transition-colors;
+  }
+  .mobile-menu-item-active {
+    @apply bg-highlight text-white;
+  }
+  .mobile-menu-item:hover,
+  .mobile-menu-item:focus {
+    @apply bg-highlight/10 text-highlight;
+  }
+  .dark .mobile-menu-item-active {
+    @apply bg-indigo-600 text-white;
+  }
+  .dark .mobile-menu-item:hover,
+  .dark .mobile-menu-item:focus {
+    @apply bg-gray-700 text-white;
+  }
+
+  /* Dropdown pentru mobile */
+  .mobile-dropdown-toggle {
+    @apply flex items-center w-full px-4 py-2 text-dark-blue dark:text-white rounded-lg transition-colors;
+  }
+  .mobile-dropdown-toggle:hover {
+    @apply bg-highlight/10 text-highlight;
+  }
+  .dark .mobile-dropdown-toggle:hover {
+    @apply bg-gray-700 text-white;
+  }
+  .mobile-dropdown-menu {
+    @apply pl-4 space-y-1;
+  }
+  .mobile-dropdown-menu-item {
+    @apply block px-4 py-2 text-dark-blue dark:text-white rounded-lg transition-colors;
+  }
+  .mobile-dropdown-menu-item:hover {
+    @apply bg-highlight/10 text-highlight;
+  }
+  .dark .mobile-dropdown-menu-item:hover {
+    @apply bg-gray-700 text-white;
+  }
+
+  /*Stiluri pentru profile*/
+  .profile-section {
+    @apply flex flex-col items-center bg-white text-dark-blue;
+  }
+  .dark .profile-section {
+    @apply bg-gray-900 text-white;
+  }
+  .profile-container {
+    @apply w-full max-w-md p-6 rounded-lg shadow bg-white text-dark-blue;
+  }
+  .dark .profile-container {
+    @apply bg-gray-800 text-white;
+  }
+  .profile-input {
+    @apply mt-1 w-full p-2 border rounded bg-white border-gray-300 text-gray-900;
+  }
+  .dark .profile-input {
+    @apply bg-gray-700 border-gray-600 text-white;
+  }
+  .profile-button {
+    @apply w-full py-2 rounded bg-blue text-white hover:bg-dark-blue transition;
+  }
+  .dark .profile-button {
+    @apply bg-indigo-600 hover:bg-indigo-500;
+  }
+
+  .profile-button-danger {
+    @apply mt-4 w-full py-2 rounded bg-red-500 text-white hover:bg-red-600 transition;
+  }
+
+  /* Sandbox - Panoul de control */
+  .sandbox-controls {
+    @apply bg-white text-dark-blue;
+  }
+  .dark .sandbox-controls {
+    @apply bg-gray-800 text-white;
+  }
+
+  /* Simulation - Butoane */
+  .simulation-button {
+    @apply px-3 py-1 rounded bg-gray-200 text-dark-blue transition-colors;
+  }
+  .simulation-button:hover {
+    @apply bg-gray-300;
+  }
+  .dark .simulation-button {
+    @apply bg-gray-700 text-white;
+  }
+  .dark .simulation-button:hover {
+    @apply bg-gray-600;
+  }
+
+  /* Simulation - Div pentru muchia activă */
+  .simulation-active-edge {
+    @apply p-2 bg-gray-100 text-dark-blue rounded;
+  }
+  .dark .simulation-active-edge {
+    @apply bg-gray-700 text-white;
+  }
+
+  /* Simulation - Text pentru numărul nodului */
+  .simulation-node-number {
+    @apply text-dark-blue;
+  }
+  .dark .simulation-node-number {
+    @apply text-white;
+  }
 }
 
 @tailwind base;

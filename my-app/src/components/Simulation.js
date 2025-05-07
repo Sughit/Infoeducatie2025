@@ -297,11 +297,12 @@ export default function Simulation() {
         return '#007bff';
       });
 
-    nodeG.append('text')
-      .attr('dy',-16)
-      .attr('text-anchor','middle')
-      .attr('font-size','10px')
-      .text(d=>d.id);
+      nodeG.append('text')
+      .attr('dy', -16)
+      .attr('text-anchor', 'middle')
+      .attr('font-size', '10px')
+      .attr('class', 'simulation-node-number')
+      .text(d => d.id);
 
   }, [algorithm, nodes, links, steps, currentStep, bstCurrentStep, weightMap, dimensions]);
 
@@ -317,8 +318,14 @@ export default function Simulation() {
       <div className="w-full h-1/2 md:w-1/2 md:h-full p-4 flex flex-col overflow-auto space-y-4">
         <h2 className="text-2xl font-semibold">Simulări Algoritmi</h2>
         <div className="flex flex-wrap space-x-2">
-          {algorithms.map(algo=>(
-            <button key={algo} onClick={()=>setAlgorithm(algo)} className={`px-3 py-1 rounded ${algorithm===algo?'bg-highlight text-white':'bg-gray-200'}`}>{algo}</button>
+          {algorithms.map(algo => (
+            <button
+              key={algo}
+              onClick={() => setAlgorithm(algo)}
+              className={`simulation-button ${algorithm === algo ? 'bg-highlight text-white' : ''}`}
+            >
+              {algo}
+            </button>
           ))}
         </div>
 
@@ -368,7 +375,9 @@ export default function Simulation() {
                 <h3 className="font-medium">Noduri vizitate</h3>
                 <div className="overflow-x-auto mb-4"><table className="table-auto border-collapse"><thead><tr>{visitedListUI.map((n,i)=><th key={i} className="border px-2 py-1">{n}</th>)}</tr></thead></table></div>
                 <h3 className="font-medium">Muchie activă</h3>
-                <div className="p-2 bg-gray-100 rounded mb-4 text-center">{activeUI?`${activeUI[0]} - ${activeUI[1]}`:'-'}</div>
+                <div className="simulation-active-edge mb-4 text-center">
+                  {activeUI ? `${activeUI[0]} - ${activeUI[1]}` : '-'}
+                </div>
               </>
             )}
             {algorithm==='Kruskal'&&(

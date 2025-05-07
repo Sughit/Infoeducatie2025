@@ -1,5 +1,6 @@
 // src/components/Sandbox.js
 import React, { useState, useRef, useEffect } from 'react';
+import '../index.css';
 import * as d3 from 'd3';
 import {
   generateDirected,
@@ -207,7 +208,7 @@ export default function Sandbox() {
       {/* Left panel */}
       <div className="flex flex-col md:w-3/5 space-y-3">
         {/* Controls */}
-        <div className="bg-white p-2 shadow rounded">
+        <div className="sandbox-controls p-2 shadow rounded">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
             <button onClick={handleGenerateUndirected} className="px-2 py-1 bg-blue text-white rounded">Graf Neorientat</button>
             <button onClick={handleGenerateDirected} className="px-2 py-1 bg-blue text-white rounded">Graf Orientat</button>

@@ -46,9 +46,9 @@ export default function Feedback() {
   };
 
   return (
-    <div className="flex items-center justify-center p-4 min-h-[calc(100vh-4rem)]">
-      <div className="w-full max-w-md bg-white rounded-lg shadow p-6">
-        <h1 className="text-2xl font-semibold mb-4 text-center">Feedback</h1>
+    <div className="flex items-center justify-center p-4 min-h-[calc(100vh-4rem)] home-section">
+      <div className="w-full max-w-md rounded-lg shadow p-6 home-section">
+        <h1 className="home-title mb-4 text-center">Feedback</h1>
         {status && (
           <p className={`mb-4 text-center ${status.type === 'error' ? 'text-red-500' : 'text-green-500'}`}>
             {status.text}
@@ -77,7 +77,7 @@ export default function Feedback() {
           </label>
           <button
             type="submit"
-            className={`w-full bg-blue text-white py-2 rounded hover:bg-light-blue transition ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`w-full home-button py-2 rounded transition ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
             disabled={loading}
           >
             {loading ? 'Trimit...' : 'Trimite'}
