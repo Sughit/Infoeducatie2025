@@ -1,15 +1,16 @@
 // src/components/Signup.js
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { auth } from '../firebase';
+import { auth, db } from '../firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 export default function Signup() {
-  const [email, setEmail]                 = useState('');
-  const [password, setPassword]           = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError]                 = useState(null);
-  const navigate                          = useNavigate();
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,7 +20,14 @@ export default function Signup() {
       return;
     }
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      const userCred = await createUserWithEmailAndPassword(auth, email, password);
+      const uid = userCred.user.uid;
+
+      // Initialize an empty results document for this user
+      await setDoc(doc(db, "results", uid), {
+        createdAt: serverTimestamp(),
+      });
+
       navigate('/');
     } catch (err) {
       setError(err.message);
