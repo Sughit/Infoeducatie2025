@@ -341,7 +341,7 @@ export default function Simulation() {
                 </div>
                 <div className="flex space-x-2">
                   <button onClick={()=>setBstCurrentStep(s=>Math.max(0,s-1))} className="px-2 py-1 bg-blue text-white rounded">Prev</button>
-                  <button onClick={()=>setBstCurrentStep(s=>Math.min(bstSteps.length-1,s+1))} className="px-2 py-1 bg-blue text-white rounded">Next</button>
+                  <button onClick={()=>setBstCurrentStep(s=>Math.min(bstSteps.length-1,s+1))} className="px-2 py-1 bg-blue text-white rounded">Urm</button>
                 </div>
               </div>
             )}
@@ -373,8 +373,8 @@ export default function Simulation() {
             )}
             {algorithm==='Kruskal'&&(
               <>
-                <h3 className="font-medium">Remaining Edges</h3>
-                <table className="mb-2 w-full table-auto border-collapse text-sm"><thead><tr className="bg-gray-100"><th className="border px-2 py-1">Edge</th><th className="border px-2 py-1">Weight</th></tr></thead><tbody>
+                <h3 className="font-medium">Muchii rămase</h3>
+                <table className="mb-2 w-full table-auto border-collapse text-sm"><thead><tr className="bg-gray-100"><th className="border px-2 py-1">Muchie</th><th className="border px-2 py-1">Cost</th></tr></thead><tbody>
                   {kruskalRemaining.map(e=>{
                     const key=`${e.u}-${e.v}`;
                     return <tr key={key}><td className="border px-2 py-1">{e.u}-{e.v}</td><td className="border px-2 py-1 text-center"><input type="number" min="1" value={weightMap[key]} disabled={currentStep>0} onChange={ev=>{
@@ -385,15 +385,15 @@ export default function Simulation() {
                     }} className="w-16 text-center border rounded"/></td></tr>;
                   })}
                 </tbody></table>
-                <h3 className="font-medium">Taken Edges</h3>
-                <table className="mb-4 w-full table-auto border-collapse text-sm"><thead><tr className="bg-gray-100"><th className="border px-2 py-1">Edge</th><th className="border px-2 py-1">Weight</th></tr></thead><tbody>
+                <h3 className="font-medium">Muchii alese</h3>
+                <table className="mb-4 w-full table-auto border-collapse text-sm"><thead><tr className="bg-gray-100"><th className="border px-2 py-1">Muchie</th><th className="border px-2 py-1">Cost</th></tr></thead><tbody>
                   {kruskalTaken.map(e=><tr key={`${e.u}-${e.v}`}><td className="border px-2 py-1">{e.u}-{e.v}</td><td className="border px-2 py-1 text-center">{e.w}</td></tr>)}
                 </tbody></table>
               </>
             )}
             {algorithm==='Prim'&&(
               <>
-                <h3 className="font-medium">Remaining Edges</h3>
+                <h3 className="font-medium">Muchii rămase</h3>
                 <table className="mb-2 w-full table-auto border-collapse text-sm"><tbody>
                   {primRemaining.map(e=><tr key={`${e.u}-${e.v}`}><td className="border px-2 py-1">{e.u}-{e.v}</td><td className="border px-2 py-1 text-center"><input type="number" min="1" value={weightMap[`${e.u}-${e.v}`]} disabled={currentStep>0} onChange={ev=>{
                     const w=Number(ev.target.value); setWeightMap(wm=>({...wm,[`${e.u}-${e.v}`]:w})); setLinks(ls=>ls.map(l=>{
@@ -402,7 +402,7 @@ export default function Simulation() {
                     }));
                   }} className="w-16 text-center border rounded"/></td></tr>)}
                 </tbody></table>
-                <h3 className="font-medium">Taken Edges</h3>
+                <h3 className="font-medium">Muchii alese</h3>
                 <table className="mb-4 w-full table-auto border-collapse text-sm"><tbody>
                   {primTaken.map(e=><tr key={`${e.u}-${e.v}`}><td className="border px-2 py-1">{e.u}-{e.v}</td><td className="border px-2 py-1 text-center">{e.w}</td></tr>)}
                 </tbody></table>
@@ -410,7 +410,7 @@ export default function Simulation() {
             )}
             <div className="flex space-x-2">
               <button onClick={()=>setCurrentStep(s=>Math.max(0,s-1))} className="px-2 py-1 bg-blue text-white rounded">Prev</button>
-              <button onClick={()=>setCurrentStep(s=>Math.min(steps.length-1,s+1))} className="px-2 py-1 bg-blue text-white rounded">Next</button>
+              <button onClick={()=>setCurrentStep(s=>Math.min(steps.length-1,s+1))} className="px-2 py-1 bg-blue text-white rounded">Urm</button>
               <span>Pas {currentStep+1}/{steps.length}</span>
             </div>
           </>
