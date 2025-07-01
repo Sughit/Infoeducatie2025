@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { auth, db } from '../../firebase'
 import { doc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore'
+import CodeTestRunner from './CodeTestRunner';
 
 export default function TestOrientateDetail() {
   const { testId } = useParams()
@@ -110,33 +111,53 @@ export default function TestOrientateDetail() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {test.questions.map((q, qi) => (
               <div key={qi} className="p-4 border rounded-lg space-y-3">
-                <p className="font-medium">Întrebarea {qi + 1}: {q.question}</p>
-                {q.imageUrl && <img src={q.imageUrl} alt="" className="max-h-48 object-contain mx-auto" />}
-                <div className="grid grid-cols-1 gap-4">
-                  {[q.correctAnswer, ...q.wrongAnswers].sort().map((opt, idx) => {
-                    const selected = answers[qi] === opt
-                    return (
-                      <label
-                        key={idx}
-                        onClick={() => handleChange(qi, opt)}
-                        className={`relative border rounded-lg p-4 cursor-pointer flex items-center justify-center transition ${
-                          selected ? 'ring-2 ring-indigo-500 bg-indigo-50' : 'hover:border-gray-400'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name={`ans${qi}`}
-                          value={opt}
-                          checked={selected}
-                          onChange={() => handleChange(qi, opt)}
-                          className="hidden"
-                        />
-                        <span className="text-center break-words">{opt}</span>
-                        {selected && <span className="absolute top-2 right-2 font-bold text-indigo-600">✓</span>}
-                      </label>
-                    )
-                  })}
-                </div>
+                <p className="font-medium">
+                  Întrebarea {qi + 1}: {q.question}
+                </p>
+            
+                {q.imageUrl && (
+                  <img
+                    src={q.imageUrl}
+                    alt=""
+                    className="max-h-48 object-contain mx-auto"
+                  />
+                )}
+            
+                {q.type === 'grila' ? (
+                  <div className="grid grid-cols-1 gap-4">
+                    {[q.correctAnswer, ...q.wrongAnswers].sort().map((opt, idx) => {
+                      const selected = answers[qi] === opt;
+                      return (
+                        <label
+                          key={idx}
+                          onClick={() => handleChange(qi, opt)}
+                          className={`relative border rounded-lg p-4 cursor-pointer flex items-center justify-center transition ${
+                            selected
+                              ? 'ring-2 ring-indigo-500 bg-indigo-50'
+                              : 'hover:border-gray-400'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name={`ans${qi}`}
+                            value={opt}
+                            checked={selected}
+                            onChange={() => handleChange(qi, opt)}
+                            className="hidden"
+                          />
+                          <span className="text-center break-words">{opt}</span>
+                          {selected && (
+                            <span className="absolute top-2 right-2 font-bold text-indigo-600">
+                              ✓
+                            </span>
+                          )}
+                        </label>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <CodeTestRunner testCases={q.testCases} />
+                )}
               </div>
             ))}
             <button
