@@ -12,7 +12,6 @@ export default function TestHome() {
   const [user, setUser] = useState(null);
   const [error, setError] = useState(null);
 
-  // determine if we have no user or no attempts
   const isEmpty = !user || attemptsCount === 0;
 
   useEffect(() => {
@@ -54,15 +53,12 @@ export default function TestHome() {
 
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] overflow-hidden outline outline-2 outline-gray-300">
-      {/* make grid single-column if empty, two columns otherwise */}
       <div className={`p-6 w-full max-w-md mx-auto md:max-w-4xl shadow grid grid-cols-1 ${!isEmpty ? 'md:grid-cols-2' : ''} gap-4 md:space-y-0 space-y-6 items-center justify-center`}>
-        {/* Title spans both columns on desktop */}
         <h1 className="text-3xl font-bold text-center md:col-span-2">Teste Grafuri & Arbori</h1>
         <p className="text-center text-gray-600 md:col-span-2">
           Exersează algoritmi de grafuri și arbori prin teste interactive.
         </p>
 
-        {/* Recent tests list only if we have attempts */}
         { !isEmpty && user && (
           <div className="space-y-2">
             <h2 className="text-lg font-semibold">Ultimele teste rezolvate</h2>
@@ -80,9 +76,7 @@ export default function TestHome() {
           </div>
         )}
 
-        {/* Stats & nav group: always shown, centered if empty */}
-        <div className={`flex flex-col space-y-4 "+(isEmpty?"h-[calc(100vh-4rem)] justify-center":"md:space-y-2") ${!isEmpty ? 'md:space-y-2' : 'space-y-6'} items-center justify-center`}>  
-          {/* Statistics cards */}
+        <div className={`flex flex-col space-y-4 "+(isEmpty?"h-[calc(100vh-4rem)] justify-center":"md:space-y-2") ${!isEmpty ? 'md:space-y-2' : 'space-y-6'} items-center justify-center`}> 
           <div className="grid grid-cols-3 gap-4">
             <div className="p-2 bg-white rounded-lg shadow text-center">
               <h2 className="text-xl font-bold">{stats.totalTests}</h2>
@@ -101,7 +95,6 @@ export default function TestHome() {
               </div>
             )}
           </div>
-          {/* Navigation buttons */}
           <nav className="space-y-2 w-full max-w-xs">
             <Link to="neorientate" className="block w-full text-center py-2 bg-blue text-white rounded">Grafuri Neorientate</Link>
             <Link to="orientate" className="block w-full text-center py-2 bg-blue text-white rounded">Grafuri Orientate</Link>

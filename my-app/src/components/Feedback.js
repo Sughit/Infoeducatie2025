@@ -1,4 +1,3 @@
-// src/components/Feedback.js
 import React, { useState, useEffect } from 'react';
 import { auth, db } from '../firebase';
 import { onAuthStateChanged } from 'firebase/auth';

@@ -24,7 +24,6 @@ export default function TestDetails() {
         if (snap.exists()) {
           const data = snap.data();
 
-        // fallback pentru teste vechi (care au doar `question`, nu `questions`)
         if (!Array.isArray(data.questions) && data.question) {
         data.questions = [{
             question: data.question,

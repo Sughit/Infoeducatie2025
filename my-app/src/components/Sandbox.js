@@ -102,7 +102,6 @@ export default function Sandbox() {
         }
       });
     }
-    // Build new directed links
     const newLinks = nodes
       .filter(n => n.id !== newRoot)
       .map(n => ({ source: parentMap[n.id], target: n.id }));
@@ -146,7 +145,6 @@ export default function Sandbox() {
   const handleAddNode = () => {
     const { nodes: ns, links: ls } = addNode(nodes, links, directed, isTree);
     updateGraph(ns, ls, isTree, directed);
-    // Extend adjacency matrix
     const oldMatrix = matrix;
     const newSize = oldMatrix.length + 1;
     const newMatrix = oldMatrix.map(row => [...row, 0]);
@@ -170,7 +168,6 @@ export default function Sandbox() {
     setMatrix(newMatrix);
   };
 
-  // Matrix cell edit
   function handleMatrixCellChange(i, j, value) {
     const newMatrix = matrix.map(row => [...row]);
     const num = Number(value);
@@ -194,7 +191,6 @@ export default function Sandbox() {
 
   const handleRefresh = () => updateGraph(nodes, links, isTree, directed);
 
-  // Derive other representations
   const adjList = generateAdjList(nodes.length, links);
   const edgeList = generateEdgeList(links, directed);
   const incidenceMatrix = directed ? generateIncidenceMatrix(nodes.length, links, true) : null;
@@ -204,9 +200,9 @@ export default function Sandbox() {
 
   return (
     <div className="flex flex-col md:flex-row h-full p-3 space-y-3 md:space-y-0 md:space-x-3">
-      {/* Left panel */}
+      {/* Panou stanga */}
       <div className="flex flex-col md:w-3/5 space-y-3">
-        {/* Controls */}
+        {/* Controale */}
         <div className="bg-white p-2 shadow rounded">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
             <button onClick={handleGenerateUndirected} className="px-2 py-1 bg-blue text-white rounded">Graf Neorientat</button>
@@ -222,18 +218,21 @@ export default function Sandbox() {
             <button onClick={handleChangeRoot} className="px-2 py-1 bg-yellow-500 text-white rounded">Schimbă Rădăcina</button>
           </div>
         </div>
-        {/* Graph */}
+
+        {/* Graf */}
         <div ref={containerRef} className="h-64 sm:h-96 border border-gray-300 rounded overflow-hidden">
           <svg ref={graphRef} className="w-full h-full" />
         </div>
-        {/* Representation selector */}
+
+        {/* Reprezentare selector */}
         <div className="flex flex-wrap items-center gap-2">
           <button onClick={handleRefresh} className="px-2 py-1 bg-indigo-600 text-white rounded text-sm">Reîmprospătează</button>
           <select value={layoutMode} onChange={e => setLayoutMode(e.target.value)} className="px-2 py-1 border rounded text-sm flex-grow">
             {modes.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
           </select>
         </div>
-        {/* Representations */}
+
+        {/* Reprezentare */}
         <div className="overflow-x-auto">
           {layoutMode === 'matrix' && (
             <table className="w-full table-auto border-collapse text-xs">
@@ -290,7 +289,7 @@ export default function Sandbox() {
           )}
         </div>
       </div>
-      {/* Right panel Mini Test */}
+      {/* Mini Test */}
       <div className="md:w-2/5 border-t md:border-t-0 md:border-l border-gray-200 pt-4 md:pt-0">
         <MiniTest nodes={nodes} links={links} directed={directed} />
       </div>

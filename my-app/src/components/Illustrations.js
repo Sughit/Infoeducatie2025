@@ -1,7 +1,5 @@
-// src/components/Illustrations.js
 import React from 'react';
 
-// culori din Tailwind
 const colors = {
   dark: '#122C34',
   blue: '#2A4494',
@@ -9,7 +7,7 @@ const colors = {
   highlight: '#4EA5D9',
 };
 
-// --- Hero (rămâne mare, nu a fost reclamată) ---
+// Hero 
 export function HeroIllustration() {
   return (
     <svg width="450" height="340" viewBox="0 0 450 340" fill="none">
@@ -27,7 +25,7 @@ export function HeroIllustration() {
   );
 }
 
-// --- Lecții: evităm tăierea cercului sus ---
+// Lectii
 export function LessonsIllustration() {
   return (
     <svg width="400" height="350" viewBox="0 0 400 350" fill="none">
@@ -39,7 +37,7 @@ export function LessonsIllustration() {
   );
 }
 
-// --- Simulări (nicio schimbare necesară) ---
+// Simulari 
 export function SimulationsIllustration() {
   return (
     <svg width="450" height="350" viewBox="0 0 450 350" fill="none">
@@ -50,9 +48,8 @@ export function SimulationsIllustration() {
   );
 }
 
-// --- Teste: toate barele aliniate la y=300 cu înălțime variabilă ---
+// Teste
 export function TestsIllustration() {
-  // viewBox height 320, baza de 300px
   return (
     <svg width="400" height="320" viewBox="0 0 400 320" fill="none">
       <rect x="60"  y="100" width="64"  height="200" rx="8" fill={colors.highlight} />
@@ -62,7 +59,7 @@ export function TestsIllustration() {
   );
 }
 
-// --- Sandbox (nicio schimbare necesară) ---
+// Sandbox 
 export function SandboxIllustration() {
   return (
     <svg width="450" height="350" viewBox="0 0 450 350" fill="none">
@@ -73,17 +70,15 @@ export function SandboxIllustration() {
   );
 }
 
-// --- Feedback: viewBox mai mare și margină internă mărită ---
+// Feedback
 export function FeedbackIllustration() {
   return (
     <svg width="600" height="450" viewBox="0 0 600 450" fill="none">
-      {/* bula principală */}
       <path
         d="M60 60 h360 v180 h-120 l-40 40 l0 -40 h-260 z"
         fill={colors.highlight}
         stroke={colors.dark}
       />
-      {/* bula secundară */}
       <path
         d="M180 180 h360 v160 h-80 l-40 40 l0 -40 h-360 z"
         fill={colors.blue}

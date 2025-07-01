@@ -1,4 +1,3 @@
-// src/components/Home.js
 import React from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -86,7 +85,6 @@ export default function Home() {
       ref={containerRef}
       className="overflow-y-auto snap-y snap-mandatory h-[calc(100vh-4rem)] scroll-smooth"
     >
-      {/* Hero (neschimbată) */}
       <section className="snap-start h-full relative bg-gradient-to-r from-blue to-light-blue flex items-center justify-center text-center overflow-hidden">
         <div className="relative z-10 max-w-2xl px-6">
           <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-4">
@@ -106,7 +104,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Restul secțiunilor */}
       {sections.map(({ id, title, icon, items, button, Illustration }) => (
         <section
           key={id}

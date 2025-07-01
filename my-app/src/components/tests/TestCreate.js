@@ -11,7 +11,6 @@ export default function TestCreate() {
   const [difficulty, setDifficulty] = useState('usor');
   const [description, setDescription] = useState('');
 
-  // support multiple questions with stable IDs
   const [questions, setQuestions] = useState([
     {
       id: uuidv4(),
@@ -129,7 +128,6 @@ export default function TestCreate() {
     <div className="p-6 max-w-lg mx-auto space-y-6">
       <h2 className="text-2xl font-semibold text-center">Creează un test</h2>
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* meta fields */}
         <label className="block">
           Secțiune
           <select value={section} onChange={e => setSection(e.target.value)} className="mt-1 w-full border rounded px-2 py-1">
@@ -155,7 +153,6 @@ export default function TestCreate() {
           <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} className="mt-1 w-full border rounded px-2 py-1" required />
         </label>
 
-        {/* dynamic questions */}
         {questions.map((q, qi) => (
           <div key={q.id} className="p-4 border rounded relative space-y-2">
             {questions.length > 1 && (
@@ -168,7 +165,6 @@ export default function TestCreate() {
               </button>
             )}
 
-            {/* Tip întrebare: grilă sau cod */}
             <label className="block">
               Tip întrebare
               <select
@@ -181,7 +177,6 @@ export default function TestCreate() {
               </select>
             </label>
 
-            {/* Enunț comun */}
             <label className="block">
               Întrebarea #{qi + 1}
               <textarea
@@ -193,7 +188,6 @@ export default function TestCreate() {
               />
             </label>
 
-            {/* Răspunsuri în funcție de tip */}
             {q.type === 'grila' ? (
               <>
                 <label className="block">

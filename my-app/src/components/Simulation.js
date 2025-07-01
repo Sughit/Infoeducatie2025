@@ -305,7 +305,6 @@ export default function Simulation() {
 
   }, [algorithm, nodes, links, steps, currentStep, bstCurrentStep, weightMap, dimensions]);
 
-  // UI lists
   const visitedListUI = ['DFS','BFS'].includes(algorithm)?steps[currentStep]?.visited||[]:[];
   const activeUI = ['DFS','BFS'].includes(algorithm)?activeEdges[0]:null;
 
@@ -322,7 +321,6 @@ export default function Simulation() {
           ))}
         </div>
 
-        {/* BST UI */}
         {algorithm==='BST'&&(
           <>
             <div className="flex space-x-2">
@@ -348,7 +346,6 @@ export default function Simulation() {
           </>
         )}
 
-        {/* Other Algorithms UI */}
         {algorithm!=='BST'&&(
           <>
             <div className="flex items-center space-x-2">

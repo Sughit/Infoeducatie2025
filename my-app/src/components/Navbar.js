@@ -25,11 +25,10 @@ export default function Navbar() {
 
   useEffect(() => {
     function outside(e) {
-      // Close desktop dropdown only when mobile menu is not open
       if (!mobileOpen && lessonsRef.current && !lessonsRef.current.contains(e.target)) {
         setLessonsOpen(false)
       }
-      // Close mobile menu (and dropdown) when clicking outside
+      
       if (
         mobileOpen &&
         mobileRef.current &&
