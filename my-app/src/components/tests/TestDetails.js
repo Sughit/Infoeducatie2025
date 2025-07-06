@@ -15,6 +15,8 @@ export default function TestDetails() {
   const [error, setError] = useState(null);
 
   const [score, setScore] = useState(null);
+  const [evaluating, setEvaluating] = useState(false);
+  const [evaluatingIndex, setEvaluatingIndex] = useState(null);
 
   useEffect(() => {
     const fetchTest = async () => {
@@ -71,47 +73,79 @@ export default function TestDetails() {
     });
   }, [answers, codeAnswers, test]);
 
-const handleSubmit = async e => {
-  e.preventDefault();
-  if (!allAnswered) return setError('Răspunde la toate întrebările.');
+  const handleSubmit = async e => {
+    e.preventDefault();
+    if (!allAnswered) return setError('Răspunde la toate întrebările.');
 
-  try {
     const user = auth.currentUser;
-    if (!user) throw new Error('Trebuie să fii autentificat.');
-
-    let correct = 0;
-
-    for (let i = 0; i < test.questions.length; i++) {
-      const q = test.questions[i];
-      if (q.type === 'grila') {
-        if (answers[i] === q.correctAnswer) correct++;
-      } else if (q.type === 'cod') {
-        const res = await CodeTestRunner(codeAnswers[i], q.testCases);
-        if (res.success && res.passed === q.testCases.length) correct++;
-      }
+    if (!user) {
+      setError('Trebuie să fii autentificat.');
+      return;
     }
 
-    const computedScore = Math.round((correct / test.questions.length) * 100);
-    setScore(computedScore); // 🔵 pentru afișare în interfață
+    setEvaluating(true); // setăm starea, dar evaluarea începe după un tick
 
-    await addDoc(collection(db, 'results', user.uid, 'attempts'), {
-      testId,
-      title: test.title,
-      section,
-      score: computedScore,
-      timestamp: serverTimestamp()
-    });
+    // mic delay pentru a permite React să afișeze ecranul de loading
+    setTimeout(async () => {
+      try {
+        let correct = 0;
 
-    setSubmitted(true);
-  } catch (err) {
-    console.error(err);
-    setError(err.message);
-  }
-};
+        for (let i = 0; i < test.questions.length; i++) {
+          const q = test.questions[i];
+          setEvaluatingIndex(i);
 
+          if (q.type === 'grila') {
+            if (answers[i] === q.correctAnswer) correct++;
+          } else if (q.type === 'cod') {
+            const res = await CodeTestRunner(codeAnswers[i], q.testCases);
+            if (res.success && res.passed === q.testCases.length) correct++;
+            if (!res.success) throw new Error(res.error);
+          }
+        }
+
+        const computedScore = Math.round((correct / test.questions.length) * 100);
+        setScore(computedScore);
+        await addDoc(collection(db, 'results', user.uid, 'attempts'), {
+          testId,
+          title: test.title,
+          section,
+          score: computedScore,
+          timestamp: serverTimestamp()
+        });
+
+        setSubmitted(true);
+      } catch (err) {
+        console.error(err);
+        setError(err.message);
+      } finally {
+        setEvaluating(false);
+        setEvaluatingIndex(null);
+      }
+    }, 50); 
+  };
 
   if (!test && !error) return <div className="p-6 text-center">Se încarcă testul...</div>;
   if (error) return <div className="text-red-600 text-center p-6">{error}</div>;
+
+  {evaluating && (
+    <div className="fixed inset-0 bg-white bg-opacity-70 flex flex-col items-center justify-center z-50">
+      <div className="flex items-center space-x-3">
+        <svg className="animate-spin h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+        </svg>
+        <div className="text-lg font-medium text-gray-700">
+          Se evaluează codul...
+        </div>
+      </div>
+      {typeof evaluatingIndex === 'number' && (
+        <div className="mt-2 text-sm text-gray-600">
+          Întrebarea {evaluatingIndex + 1} din {test?.questions?.length ?? '?'}
+        </div>
+      )}
+    </div>
+  )}
+
 
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6 bg-white rounded-lg shadow">
