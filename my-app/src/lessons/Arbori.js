@@ -25,8 +25,8 @@ export default function Arbori() {
           <li><strong>Nivelul unui vârf:</strong> distanța (număr de muchii) de la rădăcină până la acel vârf.</li>
           <li><strong>Înălțimea arborelui:</strong> nivelul maxim întâlnit între vârfuri.</li>
           <li><strong>Descendenți:</strong> toate vârfurile ce pot fi atinse coborând de la un vârf dat.</li>
-          <li><strong>Padure de arbori:</strong> o colecție de arbori disjuncți (fără muchii între ei).</li>
-          <li><strong>Miscarea rădăcinii:</strong> alegerea unui alt vârf drept rădăcină, modificând direcția arcelor pentru a păstra structura de arbore.</li>
+          <li><strong>Pădure de arbori:</strong> o colecție de arbori disjuncți (fără muchii între ei).</li>
+          <li><strong>Mișcarea rădăcinii:</strong> alegerea unui alt vârf drept rădăcină, modificând direcția arcelor pentru a păstra structura de arbore.</li>
           <li><strong>Arbori identici:</strong> doi arbori sunt identici dacă au aceleași vârfuri, aceleași legături și aceleași relații părinte-fiu.</li>
         </ul>
       </section>
@@ -57,53 +57,179 @@ export default function Arbori() {
       {/* Algoritmi */}
       <section className="mb-12">
         <h2 className="text-3xl font-bold mb-4">Algoritmi Importanți</h2>
-        <ul className="list-disc list-inside space-y-4">
-          <li><strong>Algoritmul lui Kruskal:</strong> construiește un arbore parțial de cost minim alegând muchiile cele mai ieftine care nu formează cicluri. Se folosește de structura Disjoint Set Union (DSU).</li>
-          <li><strong>Algoritmul lui Prim:</strong> construiește un arbore parțial de cost minim pornind dintr-un vârf ales și adăugând mereu cea mai ieftină muchie către un vârf nou.</li>
-          <li><strong>Parcurgere DFS:</strong> utilă pentru determinarea părinților, nivelurilor și descendenților.</li>
-          <li><strong>Parcurgere BFS:</strong> foarte eficientă pentru aflarea nivelurilor tuturor vârfurilor față de o rădăcină dată.</li>
+        <ul className="list-disc list-inside space-y-8">
+          <li>
+            <strong>Algoritmul lui Kruskal:</strong>
+            <pre className="bg-gray-100 p-4 rounded mt-2 overflow-x-auto"><code>{`
+void initDSU() {
+  for (int i = 0; i < n; i++) {
+    parinte[i] = i;
+    rang[i] = 0;
+  }
+}
+
+int gasesteRadacina(int nod) {
+  if (parinte[nod] == nod) return nod;
+  return parinte[nod] = gasesteRadacina(parinte[nod]);
+}
+
+bool uneste(int a, int b) {
+  a = gasesteRadacina(a);
+  b = gasesteRadacina(b);
+  if (a == b) return false;
+  if (rang[a] < rang[b]) swap(a, b);
+  parinte[b] = a;
+  if (rang[a] == rang[b]) rang[a]++;
+  return true;
+}
+
+void sortareMuchii() {
+  for (int i = 0; i < m - 1; i++) {
+    for (int j = 0; j < m - i - 1; j++) {
+      if (muchii[j].cost > muchii[j+1].cost) {
+        Muchie temp = muchii[j];
+        muchii[j] = muchii[j+1];
+        muchii[j+1] = temp;
+      }
+    }
+  }
+}
+
+int kruskal() {
+  sortareMuchii();
+  initDSU();
+  int costTotal = 0;
+  for (int i = 0; i < m; i++) {
+    if (uneste(muchii[i].u, muchii[i].v)) {
+      costTotal += muchii[i].cost;
+    }
+  }
+  return costTotal;
+}
+`}</code></pre>
+          </li>
+
+          <li>
+            <strong>Algoritmul lui Prim:</strong>
+            <pre className="bg-gray-100 p-4 rounded mt-2 overflow-x-auto"><code>{`
+int prim() {
+  for (int i = 0; i < n; i++) {
+    dist[i] = INF;
+    vizitat[i] = false;
+  }
+  dist[0] = 0;
+  int costTotal = 0;
+
+  for (int i = 0; i < n; i++) {
+    int nodMin = -1;
+    int distMin = INF;
+    for (int j = 0; j < n; j++) {
+      if (!vizitat[j] && dist[j] < distMin) {
+        distMin = dist[j];
+        nodMin = j;
+      }
+    }
+    vizitat[nodMin] = true;
+    costTotal += distMin;
+
+    for (int j = 0; j < n; j++) {
+      if (!vizitat[j] && listaAdiacenta[nodMin][j] != 0 && listaAdiacenta[nodMin][j] < dist[j]) {
+        dist[j] = listaAdiacenta[nodMin][j];
+      }
+    }
+  }
+  return costTotal;
+}
+`}</code></pre>
+          </li>
+
+          <li>
+            <strong>Parcurgere DFS:</strong>
+            <pre className="bg-gray-100 p-4 rounded mt-2 overflow-x-auto"><code>{`
+void dfs(int nodCurent, int parinte) {
+  for (int i = 0; i < grad[nodCurent]; i++) {
+    int vecin = listaAdiacenta[nodCurent][i];
+    if (vecin != parinte) {
+      parinti[vecin] = nodCurent;
+      niveluri[vecin] = niveluri[nodCurent] + 1;
+      dfs(vecin, nodCurent);
+    }
+  }
+}
+`}</code></pre>
+          </li>
+
+          <li>
+            <strong>Parcurgere BFS:</strong>
+            <pre className="bg-gray-100 p-4 rounded mt-2 overflow-x-auto"><code>{`
+void bfs(int radacina) {
+  int coada[MAXN];
+  int start = 0, end = 0;
+
+  for (int i = 0; i < n; i++) niveluri[i] = -1;
+
+  coada[end++] = radacina;
+  niveluri[radacina] = 0;
+
+  while (start < end) {
+    int nodCurent = coada[start++];
+    for (int i = 0; i < grad[nodCurent]; i++) {
+      int vecin = listaAdiacenta[nodCurent][i];
+      if (niveluri[vecin] == -1) {
+        niveluri[vecin] = niveluri[nodCurent] + 1;
+        coada[end++] = vecin;
+      }
+    }
+  }
+}
+`}</code></pre>
+          </li>
         </ul>
       </section>
 
       {/* Formule */}
       <section className="mb-12">
-        <h2 className="text-3xl font-bold mb-4">Formule și Relații</h2>
-        <ul className="list-disc list-inside space-y-2">
-          <li><strong>m = n - 1</strong>, unde n este numărul de vârfuri și m numărul de muchii.</li>
-          <li><strong>Număr total de arbori neorientați cu n vârfuri:</strong> n<sup>n-2</sup> (formula lui Cayley).</li>
-          <li><strong>Numărul de niveluri:</strong> egal cu înălțimea maximă plus unu.</li>
-          <li><strong>Număr minim de frunze:</strong> minim două pentru n ≥ 2.</li>
-        </ul>
-      </section>
+  <h2 className="text-3xl font-bold mb-4">Formule și Relații</h2>
+  <ul className="list-disc list-inside space-y-2">
+    <li>Numărul muchiilor în arbore cu n vârfuri: <code>m = n - 1</code></li>
+    <li>Numărul de arbori posibili cu n vârfuri (Cayley): <code>n^(n-2)</code></li>
+    <li>Înălțimea arborelui este nivelul maxim: <code>h = max niveluri</code></li>
+    <li>Gradul unui nod: numărul de fii ai săi</li>
+    <li>Numărul maxim de noduri într-un arbore binar perfect de înălțime h: <code>2^(h+1) - 1</code></li>
+    <li>Numărul maxim de noduri într-un arbore binar complet de înălțime h: <code>2^(h+1) - 1</code> (ultimul nivel poate fi parțial umplut)</li>
+    <li>Numărul minim de noduri într-un arbore binar echilibrat AVL de înălțime h: <code>N(h) = N(h-1) + N(h-2) + 1</code>, unde <code>N(0) = 1</code>, <code>N(1) = 2</code></li>
+    <li>Numărul total de noduri în arborele binar de căutare construit din n elemente: <code>n</code></li>
+    <li>Într-un arbore binar, numărul de noduri cu grad 2 este întotdeauna cu 1 mai mic decât numărul total de frunze: <code>|noduri grad 2| = |frunze| - 1</code></li>
+  </ul>
+</section>
 
       {/* Arbori Binari */}
-      <section className="mb-12">
+      <section>
         <h2 className="text-3xl font-bold mb-4">Arbori Binari</h2>
         <p className="mb-4">
-          Un arbore binar este o structură de date în care fiecare nod are cel mult doi copii: unul stâng și unul drept.
+          Un arbore binar este un arbore în care fiecare nod are cel mult doi copii, denumiți copil stâng și copil drept.
         </p>
-
-        <h3 className="text-2xl font-semibold mt-6 mb-2">Tipuri de Arbori Binari</h3>
-        <ul className="list-disc list-inside space-y-2">
-          <li><strong>Arbore binar complet:</strong> toate nivelurile, cu excepția ultimului, sunt complet umplute, iar ultimul este umplut de la stânga la dreapta.</li>
-          <li><strong>Arbore binar perfect:</strong> toate nivelurile sunt complet umplute și fiecare nod are exact doi copii sau niciunul.</li>
-          <li><strong>Arbore binar echilibrat:</strong> diferența de înălțime dintre subarborele stâng și drept este cel mult 1 pentru orice nod.</li>
-          <li><strong>Arbore binar de căutare (BST):</strong> pentru orice nod, valorile din subarborele stâng sunt mai mici, iar cele din subarborele drept sunt mai mari.</li>
-        </ul>
-
-        <h3 className="text-2xl font-semibold mt-6 mb-2">Proprietăți ale Arborilor Binari</h3>
-        <ul className="list-disc list-inside space-y-2">
-          <li>Numărul maxim de noduri la nivelul k este 2<sup>k</sup>.</li>
-          <li>Numărul maxim de noduri într-un arbore de înălțime h este 2<sup>h+1</sup> - 1.</li>
-          <li>Într-un arbore binar perfect, numărul frunzelor este 2<sup>h</sup>.</li>
-        </ul>
-
-        <h3 className="text-2xl font-semibold mt-6 mb-2">Algoritmi pe Arbori Binari</h3>
-        <ul className="list-disc list-inside space-y-2">
-          <li><strong>Inserare și căutare în BST:</strong> operații eficiente dacă arborele este echilibrat (complexitate O(log n)).</li>
-          <li><strong>Parcurgere inordine (in-order):</strong> vizitează nodurile în ordine crescătoare într-un BST.</li>
-          <li><strong>Parcurgere preordine și postordine:</strong> utile pentru serializare, reconstrucție sau evaluare de expresii.</li>
-          <li><strong>Construirea arborelui din parcurgeri:</strong> se poate reconstrui arborele dacă sunt cunoscute două dintre cele trei parcurgeri (in, pre, post).</li>
+        <ul className="list-disc list-inside space-y-4">
+          <li>
+            <strong>Arbore binar complet:</strong> toate nivelurile sunt complet umplute, cu excepția posibil ultimei, care este umplută de la stânga la dreapta.
+            <br />
+            <img src="/arbori/arbore_complet.png" alt="Arbore binar complet" className="my-4 mx-auto max-w-[300px] w-full h-auto object-contain"/>
+          </li>
+          <li>
+            <strong>Arbore binar perfect:</strong> toate frunzele sunt la același nivel și fiecare nod interior are exact doi copii.
+            <br />
+            <img src="/arbori/arbore_perfect.png" alt="Arbore binar perfect" className="my-4 mx-auto max-w-[300px] w-full h-auto object-contain" />
+          </li>
+          <li>
+            <strong>Arbore binar echilibrat:</strong> diferența de înălțime între subarborii stâng și drept ai oricărui nod nu este mai mare decât 1.
+            <br />
+            <img src="/arbori/arbore_echilibrat.png" alt="Arbore binar echilibrat" className="my-4 mx-auto max-w-[300px] w-full h-auto object-contain"/>
+          </li>
+          <li>
+            <strong>Arbore binar de căutare (BST):</strong> un arbore binar ordonat astfel încât pentru orice nod, valorile din subarborele stâng sunt mai mici, iar cele din subarborele drept sunt mai mari.
+            <br />
+            <img src="/arbori/arbore_de_cautare.png" alt="Arbore binar de căutare" className="my-4 mx-auto max-w-[300px] w-full h-auto object-contain"/>
+          </li>
         </ul>
       </section>
     </div>

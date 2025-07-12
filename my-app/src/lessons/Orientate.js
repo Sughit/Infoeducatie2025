@@ -35,30 +35,152 @@ export default function Orientate() {
       </section>
 
       <section className="mb-12">
-        <h2 className="text-3xl font-bold mb-4">Tipuri de Grafuri Orientate</h2>
-        <ul className="list-disc list-inside space-y-4">
-          <li><strong>Graf tare conex:</strong> există drum orientat între orice două vârfuri. Graful este indivizibil în componente mai mici după drumurile orientate.</li>
-          <li><strong>Graf turneu:</strong> graf orientat complet în care, între oricare două vârfuri distincte, există exact un arc (fie de la primul la al doilea, fie invers).</li>
-          <li><strong>Graf plin:</strong> fiecare pereche de vârfuri distincte este conectată prin arce în ambele direcții.</li>
-          <li><strong>Transpusul unui graf:</strong> graful obținut prin inversarea sensului fiecărui arc existent.</li>
-          <li><strong>Graf complet orientat:</strong> între oricare două vârfuri există exact un singur arc (nu există reciprocitate).</li>
-          <li><strong>Graf antisimetric:</strong> dacă (u → v) există, atunci (v → u) nu există.</li>
-          <li><strong>Graf ponderat:</strong> fiecare arc are asociat un cost sau o distanță.</li>
-          <li><strong>Graf hamiltonian:</strong> există un drum orientat care vizitează fiecare vârf exact o dată.</li>
-          <li><strong>Graf eulerian:</strong> există un ciclu care parcurge fiecare arc exact o dată, respectând direcțiile.</li>
-          <li><strong>Vârf central:</strong> un vârf din care există drum orientat către orice alt vârf.</li>
-          <li><strong>Arc inutil:</strong> un arc care poate fi eliminat fără a distruge proprietatea de accesibilitate.</li>
+        <h2 className="text-3xl font-bold mb-4">Algoritmi Importanți</h2>
+        <ul className="list-disc list-inside space-y-8">
+          <li>
+            <strong>Algoritmul lui Dijkstra:</strong> calculează cel mai scurt drum de la o sursă către toate celelalte vârfuri într-un graf ponderat cu ponderi pozitive. Complexitate: O((n + m) log n) cu heap.
+            <pre className="bg-gray-100 p-4 rounded mt-2 overflow-auto text-sm">
+{`function dijkstra(graph, source) {
+  const dist = Array(graph.length).fill(Infinity);
+  dist[source] = 0;
+  const pq = new MinHeap();
+  pq.insert([0, source]);
+
+  while (!pq.isEmpty()) {
+    const [currentDist, u] = pq.extractMin();
+    if (currentDist > dist[u]) continue;
+
+    for (const [v, weight] of graph[u]) {
+      const alt = dist[u] + weight;
+      if (alt < dist[v]) {
+        dist[v] = alt;
+        pq.insert([alt, v]);
+      }
+    }
+  }
+  return dist;
+}`}
+            </pre>
+          </li>
+
+          <li>
+            <strong>Algoritmul lui Roy-Warshall:</strong> determină matricea drumurilor pentru grafuri orientate.
+            <pre className="bg-gray-100 p-4 rounded mt-2 overflow-auto text-sm">
+{`function royWarshall(adj) {
+  const n = adj.length;
+  const reach = adj.map(row => [...row]);
+
+  for (let k = 0; k < n; k++) {
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        reach[i][j] = reach[i][j] || (reach[i][k] && reach[k][j]);
+      }
+    }
+  }
+  return reach;
+}`}
+            </pre>
+          </li>
+
+          <li>
+            <strong>Algoritmul Floyd-Warshall:</strong> calculează toate drumurile de cost minim între toate perechile de vârfuri.
+            <pre className="bg-gray-100 p-4 rounded mt-2 overflow-auto text-sm">
+{`function floydWarshall(cost) {
+  const n = cost.length;
+  const dist = cost.map(row => row.map(x => x));
+
+  for (let k = 0; k < n; k++) {
+    for (let i = 0; i < n; i++) {
+      for (let j = 0; j < n; j++) {
+        if (dist[i][k] + dist[k][j] < dist[i][j]) {
+          dist[i][j] = dist[i][k] + dist[k][j];
+        }
+      }
+    }
+  }
+  return dist;
+}`}
+            </pre>
+          </li>
+
+          <li>
+            <strong>DFS (parcurgere în adâncime):</strong> folosit pentru componente tare conexe, detectare cicluri, ordonare topologică.
+            <pre className="bg-gray-100 p-4 rounded mt-2 overflow-auto text-sm">
+{`function dfs(graph, v, visited) {
+  visited[v] = true;
+  for (const u of graph[v]) {
+    if (!visited[u]) dfs(graph, u, visited);
+  }
+}`}
+            </pre>
+          </li>
+
+          <li>
+            <strong>BFS (parcurgere în lățime):</strong> util pentru drumuri minime în grafuri neponderate.
+            <pre className="bg-gray-100 p-4 rounded mt-2 overflow-auto text-sm">
+{`function bfs(graph, start) {
+  const queue = [start];
+  const visited = Array(graph.length).fill(false);
+  visited[start] = true;
+
+  while (queue.length > 0) {
+    const v = queue.shift();
+    for (const u of graph[v]) {
+      if (!visited[u]) {
+        visited[u] = true;
+        queue.push(u);
+      }
+    }
+  }
+}`}
+            </pre>
+          </li>
         </ul>
       </section>
 
       <section className="mb-12">
-        <h2 className="text-3xl font-bold mb-4">Algoritmi Importanți</h2>
-        <ul className="list-disc list-inside space-y-4">
-          <li><strong>Algoritmul lui Dijkstra:</strong> calculează cel mai scurt drum de la o sursă către toate celelalte vârfuri într-un graf ponderat cu ponderi pozitive. Complexitate: O((n + m) log n) cu heap.</li>
-          <li><strong>Algoritmul lui Roy-Warshall:</strong> determină matricea drumurilor pentru grafuri orientate. Dacă există o secvență de arce între i și j, matricea va avea 1 în poziția (i,j).</li>
-          <li><strong>Algoritmul Floyd-Warshall:</strong> generalizare a Roy-Warshall pentru grafuri ponderate. Calculează toate drumurile de cost minim între toate perechile de vârfuri. Complexitate: O(n³).</li>
-          <li><strong>DFS (parcurgere în adâncime):</strong> esențial pentru detectarea componentelor tare conexe, a ciclurilor și pentru ordonarea topologică.</li>
-          <li><strong>BFS (parcurgere în lățime):</strong> util pentru determinarea drumurilor minime în grafuri neponderate.</li>
+        <h2 className="text-3xl font-bold mb-4">Tipuri de Grafuri Orientate</h2>
+        <ul className="list-disc list-inside space-y-8">
+          <li>
+            <strong>Graf tare conex:</strong> există drum orientat între orice două vârfuri.
+            <br />
+            <img src="/orientate/graf_tare_conex.png" alt="Graf tare conex" className="my-4 mx-auto max-w-[300px] w-full h-auto object-contain" />
+          </li>
+
+          <li>
+            <strong>Graf turneu:</strong> graf orientat complet cu un arc între fiecare pereche.
+            <br />
+            <img src="/orientate/graf_turneu.png" alt="Graf turneu" className="my-4 mx-auto max-w-[300px] w-full h-auto object-contain" />
+          </li>
+
+          <li>
+            <strong>Graf complet orientat:</strong> un arc între fiecare pereche, fără reciprocitate.
+            <br />
+            <img src="/orientate/graf_complet.png" alt="Graf complet orientat" className="my-4 mx-auto max-w-[300px] w-full h-auto object-contain" />
+          </li>
+
+          <li>
+            <strong>Graf ponderat:</strong> fiecare arc are un cost.
+            <br />
+            <img src="/orientate/graf_ponderat.png" alt="Graf ponderat" className="my-4 mx-auto max-w-[300px] w-full h-auto object-contain" />
+          </li>
+
+          <li>
+            <strong>Graf hamiltonian:</strong> există un drum care vizitează fiecare vârf o singură dată.
+            <br />
+            <img src="/orientate/graf_hamiltonian.png" alt="Graf hamiltonian" className="my-4 mx-auto max-w-[300px] w-full h-auto object-contain" />
+          </li>
+
+          <li>
+            <strong>Graf eulerian:</strong> există un ciclu care parcurge fiecare arc o singură dată.
+            <br />
+            <img src="/orientate/graf_eulerian.png" alt="Graf eulerian" className="my-4 mx-auto max-w-[300px] w-full h-auto object-contain" />
+          </li>
+
+          <li>
+            <strong>Vârf central:</strong> vârf cu drum către orice altul.
+            <img src="/orientate/graf_varf_central.png" alt="Vârf Central" className="my-4 mx-auto max-w-[300px] w-full h-auto object-contain" />
+          </li>
         </ul>
       </section>
 
@@ -73,7 +195,6 @@ export default function Orientate() {
           <li><strong>Număr de grafuri orientate posibile cu n vârfuri:</strong> 2^(n(n-1)).</li>
         </ul>
       </section>
-
     </div>
   );
 }
