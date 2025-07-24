@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, use } from 'react';
 import * as d3 from 'd3';
 import {
   generateUndirected,
@@ -35,9 +35,21 @@ export default function Simulation() {
   const [bstCurrentStep, setBstCurrentStep] = useState(0);
 
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  
+  // Custom matrix state
+  const [useCustomMatrix, setUseCustomMatrix] = useState(false);
+  const [customMatrix, setCustomMatrix]     = useState([]);
 
   const svgRef = useRef();
   const containerRef = useRef();
+
+  const getWeight = (u, v) => {
+  if (useCustomMatrix && customMatrix.length) {
+    return customMatrix[u - 1][v - 1];
+  }
+  const key = `${Math.min(u, v)}-${Math.max(u, v)}`;
+  return weightMap[key];
+};
 
   // Track container size
   useEffect(() => {
@@ -188,17 +200,90 @@ export default function Simulation() {
     }
   }, [algorithm, nodeCount]);
   
+  //  Hook-ul care construieste graful din customMatrix si lanseaza simularea direct
+  useEffect(() => {
+    if (!useCustomMatrix || customMatrix.length === 0) return;
 
-  useEffect(()=>{
-    if(algorithm==='BST'||!nodes.length||(algorithm!=='BST'&&['DFS','BFS'].includes(algorithm)&&startNode==null))return;
-    let sim=[];
-    if(algorithm==='DFS')sim=simulateDFS(nodes,links,startNode);
-    if(algorithm==='BFS')sim=simulateBFS(nodes,links,startNode);
-    if(algorithm==='Kruskal')sim=simulateKruskal(nodes,links);
-    if(algorithm==='Prim')sim=simulatePrim(nodes,links,startNode);
-    setSteps(sim);
+    const ns = customMatrix.map((_, i) => ({ id: i + 1 }));
+    const ls = [];
+    for (let i = 0; i < customMatrix.length; i++) {
+      for (let j = 0; j < customMatrix.length; j++) {
+        const val = customMatrix[i][j];
+        if (['DFS','BFS'].includes(algorithm) ? val === 1 : val >= 0) {
+          ls.push({
+            source: i + 1,
+            target: j + 1,
+            ...( ['Kruskal','Prim'].includes(algorithm) ? { weight: val } : {} )
+          });
+        }
+      }
+    }
+
+    // poziţionare D3
+    const { width, height } = containerRef.current.getBoundingClientRect();
+    const sim = d3.forceSimulation(ns)
+      .force('link', d3.forceLink(ls).id(d => d.id).distance(algorithm==='Prim'?120:80))
+      .force('charge', d3.forceManyBody().strength(-200))
+      .force('center', d3.forceCenter(width/2, height/2))
+      .force('collide', d3.forceCollide().radius(25))
+      .stop();
+    for (let k = 0; k < 300; k++) sim.tick();
+    const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+    ns.forEach(n => {
+      n.x = clamp(n.x, margin, width - margin);
+      n.y = clamp(n.y, margin, height - margin);
+    });
+
+    setNodes(ns);
+    setLinks(ls);
+    setStartNode(ns[0].id);
+
+    if (['Kruskal','Prim'].includes(algorithm)) {
+      const wm = {};
+      ls.forEach(e => {
+        const u = e.source, v = e.target;
+        if (u < v) wm[`${u}-${v}`] = e.weight;
+      });
+      setWeightMap(wm);
+    }
+
+    let simSteps = [];
+    const s = ns[0].id;
+    if (algorithm === 'DFS') {
+      simSteps = simulateDFS(ns, ls, s);
+    } else if (algorithm === 'BFS') {
+      simSteps = simulateBFS(ns, ls, s);
+    } else if (algorithm === 'Kruskal') {
+      simSteps = simulateKruskal(ns, ls);
+    } else if (algorithm === 'Prim') {
+      simSteps = simulatePrim(ns, ls, s);
+    }
+    setSteps(simSteps);
     setCurrentStep(0);
-  },[nodes,links,algorithm,startNode,weightMap]);
+
+  }, [useCustomMatrix, customMatrix, algorithm]);
+
+  //  Hook-ul global de simulare, care acum va ignora modul customMatrix
+  useEffect(() => {
+    if (useCustomMatrix) return;           
+    if (!nodes.length) return;             
+    if (['DFS','BFS','Prim'].includes(algorithm) && startNode == null) return;
+    if (algorithm === 'BST') return;
+
+    let simSteps = [];
+    if (algorithm === 'DFS') {
+      simSteps = simulateDFS(nodes, links, startNode);
+    } else if (algorithm === 'BFS') {
+      simSteps = simulateBFS(nodes, links, startNode);
+    } else if (algorithm === 'Kruskal') {
+      simSteps = simulateKruskal(nodes, links);
+    } else if (algorithm === 'Prim') {
+      simSteps = simulatePrim(nodes, links, startNode);
+    }
+
+    setSteps(simSteps);
+    setCurrentStep(0);
+  }, [nodes, links, algorithm, startNode, weightMap, useCustomMatrix]);
 
   const activeEdges = steps[currentStep]?.activeEdges ?? [];
   const kruskalTaken = [];
@@ -350,8 +435,28 @@ export default function Simulation() {
           <>
             <div className="flex items-center space-x-2">
               <input type="number" min="1" placeholder="nr noduri" value={nodeCount} onChange={e=>setNodeCount(e.target.value)} className="w-20 border rounded px-2 py-1" />
-              <button onClick={()=>generateGraph(parseInt(nodeCount)||7)} className="px-3 py-1 bg-green-500 text-white rounded">Regenerate</button>
-              {['DFS','BFS'].includes(algorithm)&&(
+              <button onClick={()=>generateGraph(parseInt(nodeCount)||7)} className="px-3 py-1 bg-green-500 text-white rounded">Regenerare</button>
+              <button
+                onClick={() => {
+                  if (useCustomMatrix) {
+                    setUseCustomMatrix(false);
+                    generateGraph(parseInt(nodeCount) || 7);
+                  } else {
+                    const size = parseInt(nodeCount);
+                    // aici modificăm valoarea implicită:
+                    const defaultVal = ['Kruskal','Prim'].includes(algorithm) ? -1 : 0;
+                    const matrix = Array.from({ length: size }, () => Array(size).fill(defaultVal));
+                    setCustomMatrix(matrix);
+                    setUseCustomMatrix(true);
+                  }
+                }}
+                className={`px-3 py-1 rounded ${
+                  useCustomMatrix ? 'bg-red-500 text-white' : 'bg-indigo-500 text-white'
+                }`}
+              >
+                {useCustomMatrix ? 'Închide matricea' : 'Matrice personalizată'}
+              </button>
+              {['DFS','BFS','Prim'].includes(algorithm)&&(
                 <div className="flex items-center space-x-2">
                   <label>Nod start:</label>
                   <select value={startNode||''} onChange={e=>setStartNode(Number(e.target.value))} className="border rounded px-2 py-1">
@@ -360,6 +465,61 @@ export default function Simulation() {
                 </div>
               )}
             </div>
+            {useCustomMatrix && (
+              <div className="mt-4 text-sm">
+                <table className="table-auto border-collapse">
+                  <thead>
+                    <tr>
+                      <th></th>
+                      {customMatrix.map((_, j) => (
+                        <th key={j} className="border px-1">{j+1}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {customMatrix.map((row, i) => (
+                      <tr key={i}>
+                        <th className="border px-1">{i+1}</th>
+                        {row.map((val, j) => (
+                          <td key={j} className="border px-1">
+                            {['DFS','BFS'].includes(algorithm) ? (
+                              <select
+                                value={val}
+                                onChange={e => {
+                                  const v = Number(e.target.value);
+                                  const m = customMatrix.map(r => [...r]);
+                                  m[i][j] = v;
+                                  if (i !== j) m[j][i] = v;
+                                  setCustomMatrix(m);
+                                }}
+                                className="w-full text-xs p-0 border rounded"
+                              >
+                                <option value={0}>0</option>
+                                <option value={1}>1</option>
+                              </select>
+                            ) : (
+                              <input
+                                type="number"
+                                min="-1"
+                                value={val}
+                                onChange={e => {
+                                  const v = Number(e.target.value);
+                                  const m = customMatrix.map(r => [...r]);
+                                  m[i][j] = v;
+                                  if (i !== j) m[j][i] = v;
+                                  setCustomMatrix(m);
+                                }}
+                                className="w-14 text-center border rounded"
+                              />
+                            )}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
             {['DFS','BFS'].includes(algorithm)&&(
               <>
                 <h3 className="font-medium">Noduri vizitate</h3>
@@ -370,38 +530,46 @@ export default function Simulation() {
             )}
             {algorithm==='Kruskal'&&(
               <>
-                <h3 className="font-medium">Muchii rămase</h3>
-                <table className="mb-2 w-full table-auto border-collapse text-sm"><thead><tr className="bg-gray-100"><th className="border px-2 py-1">Muchie</th><th className="border px-2 py-1">Cost</th></tr></thead><tbody>
-                  {kruskalRemaining.map(e=>{
-                    const key=`${e.u}-${e.v}`;
-                    return <tr key={key}><td className="border px-2 py-1">{e.u}-{e.v}</td><td className="border px-2 py-1 text-center"><input type="number" min="1" value={weightMap[key]} disabled={currentStep>0} onChange={ev=>{
-                      const w=Number(ev.target.value); setWeightMap(wm=>({...wm,[key]:w})); setLinks(ls=>ls.map(l=>{
-                        const su=typeof l.source==='object'?l.source.id:l.source; const sv=typeof l.target==='object'?l.target.id:l.target;
-                        if((su===e.u&&sv===e.v)||(su===e.v&&sv===e.u)) return{...l,weight:w}; return l;
-                      }));
-                    }} className="w-16 text-center border rounded"/></td></tr>;
-                  })}
-                </tbody></table>
+                {!useCustomMatrix&&(
+                  <>
+                    <h3 className="font-medium">Muchii rămase</h3>
+                    <table className="mb-2 w-full table-auto border-collapse text-sm"><thead><tr className="bg-gray-100"><th className="border px-2 py-1">Muchie</th><th className="border px-2 py-1">Cost</th></tr></thead><tbody>
+                      {kruskalRemaining.map(e=>{
+                        const key=`${e.u}-${e.v}`;
+                        return <tr key={key}><td className="border px-2 py-1">{e.u}-{e.v}</td><td className="border px-2 py-1 text-center"><input type="number" min="1" value={weightMap[key]} disabled={currentStep>0} onChange={ev=>{
+                          const w=Number(ev.target.value); setWeightMap(wm=>({...wm,[key]:w})); setLinks(ls=>ls.map(l=>{
+                            const su=typeof l.source==='object'?l.source.id:l.source; const sv=typeof l.target==='object'?l.target.id:l.target;
+                            if((su===e.u&&sv===e.v)||(su===e.v&&sv===e.u)) return{...l,weight:w}; return l;
+                          }));
+                        }} className="w-16 text-center border rounded"/></td></tr>;
+                      })}
+                    </tbody></table>
+                  </>  
+                )}
                 <h3 className="font-medium">Muchii alese</h3>
                 <table className="mb-4 w-full table-auto border-collapse text-sm"><thead><tr className="bg-gray-100"><th className="border px-2 py-1">Muchie</th><th className="border px-2 py-1">Cost</th></tr></thead><tbody>
-                  {kruskalTaken.map(e=><tr key={`${e.u}-${e.v}`}><td className="border px-2 py-1">{e.u}-{e.v}</td><td className="border px-2 py-1 text-center">{e.w}</td></tr>)}
+                  {kruskalTaken.map(e=><tr key={`${e.u}-${e.v}`}><td className="border px-2 py-1">{e.u}-{e.v}</td><td className="border px-2 py-1 text-center">{getWeight(e.u, e.v)}</td></tr>)}
                 </tbody></table>
               </>
             )}
             {algorithm==='Prim'&&(
               <>
-                <h3 className="font-medium">Muchii rămase</h3>
-                <table className="mb-2 w-full table-auto border-collapse text-sm"><tbody>
-                  {primRemaining.map(e=><tr key={`${e.u}-${e.v}`}><td className="border px-2 py-1">{e.u}-{e.v}</td><td className="border px-2 py-1 text-center"><input type="number" min="1" value={weightMap[`${e.u}-${e.v}`]} disabled={currentStep>0} onChange={ev=>{
-                    const w=Number(ev.target.value); setWeightMap(wm=>({...wm,[`${e.u}-${e.v}`]:w})); setLinks(ls=>ls.map(l=>{
-                      const su=typeof l.source==='object'?l.source.id:l.source; const sv=typeof l.target==='object'?l.target.id:l.target;
-                      if((su===e.u&&sv===e.v)||(su===e.v&&sv===e.u)) return{...l,weight:w}; return l;
-                    }));
-                  }} className="w-16 text-center border rounded"/></td></tr>)}
-                </tbody></table>
+                {!useCustomMatrix&&(
+                  <>
+                    <h3 className="font-medium">Muchii rămase</h3>
+                    <table className="mb-2 w-full table-auto border-collapse text-sm"><thead><tr className="bg-gray-100"><th className="border px-2 py-1">Muchie</th><th className="border px-2 py-1">Cost</th></tr></thead><tbody>
+                      {primRemaining.map(e=><tr key={`${e.u}-${e.v}`}><td className="border px-2 py-1">{e.u}-{e.v}</td><td className="border px-2 py-1 text-center"><input type="number" min="1" value={weightMap[`${e.u}-${e.v}`]} disabled={currentStep>0} onChange={ev=>{
+                        const w=Number(ev.target.value); setWeightMap(wm=>({...wm,[`${e.u}-${e.v}`]:w})); setLinks(ls=>ls.map(l=>{
+                          const su=typeof l.source==='object'?l.source.id:l.source; const sv=typeof l.target==='object'?l.target.id:l.target;
+                          if((su===e.u&&sv===e.v)||(su===e.v&&sv===e.u)) return{...l,weight:w}; return l;
+                        }));
+                      }} className="w-16 text-center border rounded"/></td></tr>)}
+                    </tbody></table>
+                  </>
+                )}
                 <h3 className="font-medium">Muchii alese</h3>
-                <table className="mb-4 w-full table-auto border-collapse text-sm"><tbody>
-                  {primTaken.map(e=><tr key={`${e.u}-${e.v}`}><td className="border px-2 py-1">{e.u}-{e.v}</td><td className="border px-2 py-1 text-center">{e.w}</td></tr>)}
+                <table className="mb-4 w-full table-auto border-collapse text-sm"><thead><tr className="bg-gray-100"><th className="border px-2 py-1">Muchie</th><th className="border px-2 py-1">Cost</th></tr></thead><tbody>
+                  {primTaken.map(e=><tr key={`${e.u}-${e.v}`}><td className="border px-2 py-1">{e.u}-{e.v}</td><td className="border px-2 py-1 text-center">{getWeight(e.u, e.v)}</td></tr>)}
                 </tbody></table>
               </>
             )}

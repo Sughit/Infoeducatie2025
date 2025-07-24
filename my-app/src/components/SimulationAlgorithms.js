@@ -168,44 +168,44 @@ export function simulateKruskal(nodes, links) {
  * @param {number} start
  */
 export function simulatePrim(nodes, links, start) {
-  const visited = new Set();
-  const steps = [];
-  const adj = {};
+  const norm = x => typeof x === 'object' ? x.id : x;
 
-  // Adjacență cu greutăți
-  links.forEach(l => {
-    const u = typeof l.source === 'object' ? l.source.id : l.source;
-    const v = typeof l.target === 'object' ? l.target.id : l.target;
+  // 1) Construim lista de adiacență
+  const adj = {};
+  links.forEach(e => {
+    const u = norm(e.source), v = norm(e.target);
     if (!adj[u]) adj[u] = [];
     if (!adj[v]) adj[v] = [];
-    adj[u].push({ to: v, weight: l.weight });
-    adj[v].push({ to: u, weight: l.weight }); // graf neorientat
+    adj[u].push({ node: v, weight: e.weight ?? 1 });
+    adj[v].push({ node: u, weight: e.weight ?? 1 });
   });
 
-  const pq = []; // min-heap simulată cu sort
+  // 2) Dacă nodul de start nu are vecini → întoarcem pas gol
+  if (!adj[start]) return [];
+
+  // 3) Restul algoritmului Prim (min-heap simulation, etc.)
+  const visited = new Set();
+  const steps = [];
+  const pq = [...adj[start]].map(e => ({ ...e, from: start }));
 
   visited.add(start);
-  steps.push({ visited: [start], activeEdges: [] });
-
-  pq.push(...adj[start]);
-  pq.sort((a, b) => a.weight - b.weight);
 
   while (pq.length) {
-    const { to: v, weight } = pq.shift();
-    const u = [...visited].find(n =>
-      adj[n].some(e => e.to === v && e.weight === weight)
-    );
-    if (!visited.has(v)) {
-      visited.add(v);
-      steps.push({ visited: Array.from(visited), activeEdges: [[u, v]] });
-      for (const e of adj[v]) {
-        if (!visited.has(e.to)) pq.push(e);
+    pq.sort((a, b) => a.weight - b.weight);  // simplu min-heap
+    const edge = pq.shift();
+    const { node: v, weight, from } = edge;
+    if (visited.has(v)) continue;
+    steps.push({ visited: Array.from(visited), activeEdges: [[from, v]] });
+    visited.add(v);
+    for (const next of adj[v]) {
+      if (!visited.has(next.node)) {
+        pq.push({ ...next, from: v });
       }
-      pq.sort((a, b) => a.weight - b.weight);
     }
   }
 
   return steps;
 }
+
 
   
